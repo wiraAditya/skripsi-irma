@@ -1,0 +1,44 @@
+body{
+  background-color: #FFF1DF;
+}
+
+.container {
+  margin: 0 auto;
+  padding: 0px;
+  background-color: #FFF1DF;
+}
+
+.card{
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.category{
+  padding-left: 20px;
+}
+
+.category-list{
+  background-color: #C0BD98;
+  color: #FAE9D1;
+  font-family: poppins, sans-serif;
+  cursor: pointer;
+}
+
+.category-list.active{
+  border-style: solid;
+  background-color: #E2E1B2;
+  color: #3A5A40;
+  font-family: poppins, sans-serif;
+  cursor: pointer;
+}
+
+.scroll-horizontal {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.scroll-horizontal::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
