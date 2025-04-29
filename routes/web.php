@@ -11,6 +11,8 @@ Route::get('/', [FrontendController::class, 'index'])->name('index');
 Route::post('/add-to-cart', [FrontendController::class, 'addToCart'])->name('add.to.cart');
 Route::get('/checkout', [FrontendController::class, 'checkout'])->name('checkout');
 Route::post('/checkout/store', [FrontendController::class, 'checkoutStore'])->name('checkout.store');
+Route::post('/payment-success', [FrontendController::class, 'paymentSuccess']);
+Route::view('/payment/success', 'payment.success');
 
 Route::get('/dashboard', function () {
     return view('dashboard');

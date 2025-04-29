@@ -11,11 +11,21 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Midtrans\Config;
+use Midtrans\Snap;
 
 use function PHPUnit\Framework\isEmpty;
 
 class FrontendController extends Controller
 {
+    public function __construct()
+    {
+        Config::$serverKey = config('midtrans.server_key');
+        Config::$isProduction = config('midtrans.is_production');
+        Config::$isSanitized = true;
+        Config::$is3ds = true;
+    }
+
     public function index(Request $request)
     {
         $table = null;
@@ -101,6 +111,7 @@ class FrontendController extends Controller
     {
         $prefix = 'ADR';
         $today = Carbon::today()->format('Ymd');
+        $code = rand(1000, 9999);
 
         $countToday = DB::table('orders') // Ganti your_table_name
             ->whereDate('created_at', Carbon::today())
@@ -108,7 +119,7 @@ class FrontendController extends Controller
 
         $nextNumber = str_pad($countToday + 1, 4, '0', STR_PAD_LEFT);
 
-        $code = "{$prefix}{$today}{$nextNumber}";
+        $code = "{$prefix}{$today}{$code}{$nextNumber}";
 
         return $code;
     }
@@ -149,8 +160,37 @@ class FrontendController extends Controller
             $paymentMethod = $request->payment_method;
 
             if ($paymentMethod == 'midtrans') {
+                if ($order->payment_status == 2) {
+                    return response()->json([
+                        'snap_token' => $order->payment_url
+                    ]);
+                }
+
+                if (!$order) {
+                    return response()->json([
+                        'message' => 'Order tidak ditemukan untuk meja ini.'
+                    ], 404);
+                }
+
+                $transaction = [
+                    'transaction_details' => [
+                        'order_id' => $order->code,
+                        'gross_amount' => $order->total_price,
+                    ],
+                    'customer_details' => [
+                        'first_name' => $request->name,
+                        'email' => $request->email,
+                    ],
+                ];
+
+                $snapToken = Snap::getSnapToken($transaction);
+
+                $order->payment_status = 2;
+                $order->payment_url = $snapToken;
+                $order->save();
+
                 return response()->json([
-                    'redirect_url' => 'asd'
+                    'snap_token' => $snapToken
                 ]);
             }
 
@@ -168,5 +208,32 @@ class FrontendController extends Controller
         return response()->json([
             'message' => 'Payment Success! Please pay at the cashier.'
         ]);
+    }
+
+    public function paymentSuccess(Request $request)
+    {
+        $validated = $request->validate([
+            'order_id' => 'required|string',
+            'transaction_status' => 'required|string',
+        ]);
+
+        $order = Order::where('code', $validated['order_id'])->first();
+
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        // $status = \Midtrans\Transaction::status($validated['order_id']);
+
+        // Cek apakah status sudah success atau belum (hindari update ganda)
+        if ($order->payment_status === 3) {
+            return response()->json(['message' => 'Order already marked as success']);
+        }
+
+        $order->update([
+            'payment_status' => 3
+        ]);
+
+        return response()->json(['message' => 'Order status updated successfully']);
     }
 }

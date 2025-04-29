@@ -23,6 +23,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous">
     </script>
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}">
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         const Toast = Swal.mixin({
@@ -174,8 +176,40 @@
                 method: 'POST',
                 data: formData,
                 success: function(response) {
-                    if (response.redirect_url) {
-                        window.location.href = response.redirect_url;
+                    if (response.snap_token) {
+                        snap.pay(response.snap_token, {
+                            onSuccess: function(result) {
+                                fetch('/payment-success', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Accept': 'application/json',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                        },
+                                        body: JSON.stringify({
+                                            order_id: result.order_id,
+                                            transaction_status: result
+                                                .transaction_status
+                                        })
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        console.log('Payment Success API response:',
+                                            data);
+                                        window.location.href = '/payment/success';
+                                    })
+                                    .catch(error => {
+                                        console.error('Error calling paymentSuccess:',
+                                            error);
+                                    });
+                            },
+                            onPending: function(result) {
+                                console.log(result);
+                            },
+                            onError: function(result) {
+                                console.log(result);
+                            }
+                        });
                     } else {
                         Swal.fire({
                             icon: 'success',
