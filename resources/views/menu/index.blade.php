@@ -1,192 +1,103 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Menu') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-gray-500 text-sm mb-2">Total Menu</h3>
-                    <p class="text-3xl font-bold">{{ $totalData }}</p>
-                </div>
+<x-layouts.app :title="'Menu'">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold text-gray-900">Menu</h1>
+        <a href="{{ route('menu.create') }}" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Tambah
+        </a>
+    </div>
+    
+    @if(session('success'))
+        <x-alert type="success" :message="session('success')" />
+    @endif
+    
+    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+        <div class="p-6 bg-white border-b border-gray-200">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                No
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Nama
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Kategori
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Harga
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @forelse($menus as $index => $menu)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {{ ($menus->currentPage() - 1) * $menus->perPage() + $loop->iteration }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {{ $menu->nama }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {{ $menu->kategori->nama }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        Rp {{ number_format($menu->harga, 0, ',', '.') }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $menu->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                        {{ $menu->is_active ? 'Aktif' : 'Tidak Aktif' }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex space-x-2">
+                                        <a href="{{ route('menu.edit', $menu) }}" class="bg-yellow-500 hover:bg-yellow-600 text-black rounded-sm px-2.5 py-1">Edit</a>
+                                        <button
+                                            class="bg-red-700 hover:bg-red-900 text-white rounded-sm px-2.5 py-1"
+                                            type="button"
+                                            onclick="showModal('deleteModal', '{{ route('menu.destroy', $menu) }}')"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                    Tidak ada menu tersedia
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold">Menu</h3>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#createMenuModal">
-                            New Data
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="table table-bordered data-table">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Image</th>
-                                    <th>Name</th>
-                                    <th>Description</th>
-                                    <th>Price</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="mt-4">
+                {{ $menus->links() }}
             </div>
-
-            <!-- Footer -->
-            <footer class="mt-8 text-center text-sm text-gray-600">
-                © 2025 Admin Panel. All rights reserved.
-            </footer>
         </div>
     </div>
-
-    @include('components.menu.create-modal', ['categories' => $categories])
-    @include('components.menu.edit-modal', ['categories' => $categories])
-
-    @section('script')
-        <script>
-            $(function() {
-                var table = $('.data-table').DataTable({
-                    processing: true,
-                    serverSide: true,
-                    ajax: "{{ route('menu.index') }}",
-                    columns: [{
-                            data: 'id',
-                            name: 'id'
-                        },
-                        {
-                            data: 'image',
-                            name: 'image'
-                        },
-                        {
-                            data: 'name',
-                            name: 'name'
-                        },
-                        {
-                            data: 'description',
-                            name: 'description'
-                        },
-                        {
-                            data: 'price',
-                            name: 'price'
-                        },
-                        {
-                            data: 'is_active',
-                            name: 'is_active'
-                        },
-                        {
-                            data: 'action',
-                            name: 'action',
-                            orderable: true,
-                            searchable: true
-                        },
-                    ]
-                });
-            });
-
-            $(document).ready(function() {
-                $(document).on('click', '.delete-btn', function() {
-                    var id = $(this).data('id');
-                    if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-                        $.ajax({
-                            url: `{{ route('menu.destroy', ':id') }}`.replace(':id', id),
-                            type: 'DELETE',
-                            data: {
-                                _token: '{{ csrf_token() }}'
-                            },
-                            success: function(response) {
-                                // Reload datatable
-                                Swal.fire(
-                                    'Success!',
-                                    'Data deleted successfully.',
-                                    'success'
-                                );
-                                $('.data-table').DataTable().ajax.reload(null, false);
-                            },
-                            error: function(xhr) {
-                                alert('Error deleting data.');
-                            }
-                        });
-                    }
-                });
-            });
-
-            function previewImage(event) {
-                const reader = new FileReader();
-                const imagePreview = document.getElementById('imagePreview');
-
-                if (!imagePreview) {
-                    console.error('Element imagePreview not found!');
-                    return;
-                }
-
-                reader.onload = function() {
-                    imagePreview.style.display = 'block';
-                    imagePreview.src = reader.result;
-                }
-
-                if (event.target.files[0]) {
-                    reader.readAsDataURL(event.target.files[0]);
-                } else {
-                    imagePreview.style.display = 'none';
-                    imagePreview.src = "#";
-                }
-            }
-            window.previewImage = previewImage;
-
-            function openEditModal(menu) {
-                fetch(`/menu/${menu}/edit`)
-                    .then(response => response.json())
-                    .then(data => {
-                        $('#editMenuForm').attr('action', `/menu/${data.id}`);
-
-                        $('#edit_category').val(data.menu_category_id);
-                        $('#edit_name').val(data.name);
-                        $('#edit_description').val(data.description);
-                        $('#edit_price').val(data.price);
-                        $('#edit_status').val(data.is_active ? '1' : '0');
-
-                        const preview = document.getElementById('editImagePreview');
-                        if (data.image) {
-                            preview.style.display = 'block';
-                            preview.src = data.image.startsWith('http') ? data.image :
-                                '/storage/menu_images/' + `${data.image}`;
-                        } else {
-                            preview.style.display = 'none';
-                            preview.src = "#";
-                        }
-
-                        new bootstrap.Modal(document.getElementById('editMenuModal')).show();
-                    })
-                    .catch(error => console.error('Error:', error));
-            }
-
-            function previewEditImage(event) {
-                const reader = new FileReader();
-                const preview = document.getElementById('editImagePreview');
-
-                reader.onload = function() {
-                    preview.style.display = 'block';
-                    preview.src = reader.result;
-                }
-
-                if (event.target.files[0]) {
-                    reader.readAsDataURL(event.target.files[0]);
-                } else {
-                    preview.style.display = 'none';
-                    preview.src = "#";
-                }
-            }
-        </script>
-    @endsection
-</x-app-layout>
+    
+    <x-delete-modal
+        modalId="deleteModal"
+        modalTitle="Hapus Menu"
+        message="Apakah Anda yakin ingin menghapus menu ini? Data yang sudah dihapus tidak dapat dikembalikan."
+        formId="deleteForm"
+    >
+    </x-delete-modal>
+</x-layouts.app>

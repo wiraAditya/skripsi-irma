@@ -3,24 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Menu extends Model
 {
-    use SoftDeletes;
-
-    protected $table = 'menus';
-
-    protected $casts = [
-        'is_active' => 'boolean'
-    ];
-
+    protected $table = 'menu';
+    
     protected $fillable = [
         'menu_category_id',
-        'name',
-        'description',
-        'price',
-        'image',
+        'nama',
+        'deskripsi',
+        'harga',
+        'gambar',
         'is_active'
     ];
 
@@ -29,8 +22,8 @@ class Menu extends Model
         return $query->where('is_active', true);
     }
 
-    public function menuCategory()
+    public function kategori()
     {
-        return $this->belongsTo(MenuCategory::class);
+        return $this->belongsTo(Kategori::class, 'menu_category_id');
     }
 }
