@@ -15,6 +15,21 @@
                     </div>
                 </div>
                 
+                <!-- Customer Information -->
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Customer Information</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="customer-name" class="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+                            <input type="text" id="customer-name" class="w-full p-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500" placeholder="Masukkan nama Anda">
+                        </div>
+                        <div>
+                            <label for="customer-notes" class="block text-sm font-medium text-gray-700 mb-1">Catatan</label>
+                            <textarea id="customer-notes" rows="3" class="w-full p-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500" placeholder="Tambahkan catatan (opsional)"></textarea>
+                        </div>
+                    </div>
+                </div>
+                        
                 <!-- Payment Methods -->
                 <div>
                     <h2 class="text-lg font-semibold mb-4">Select Payment Method</h2>
@@ -117,6 +132,20 @@
         methodInput.name = 'method';
         methodInput.value = methodName;
         form.appendChild(methodInput);
+        
+        // Add customer name
+        const nameInput = document.createElement('input');
+        nameInput.type = 'hidden';
+        nameInput.name = 'nama';
+        nameInput.value = document.getElementById('customer-name').value;
+        form.appendChild(nameInput);
+        
+        // Add customer notes
+        const notesInput = document.createElement('input');
+        notesInput.type = 'hidden';
+        notesInput.name = 'catatan';
+        notesInput.value = document.getElementById('customer-notes').value;
+        form.appendChild(notesInput);
         
         // Add table ID if available
         if (tableId) {

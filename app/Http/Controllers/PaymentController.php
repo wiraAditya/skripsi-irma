@@ -66,7 +66,8 @@ class PaymentController extends HomeBaseController
             'tax' => $tax,
             'payment_method' => $method,
             'transaction_code' => $transactionCode,
-            'catatan' => $request->notes ?? '',
+            'catatan' => $request->catatan ?? '',
+            'nama' => $request->nama ?? '',
             'status' => $status,
         ]);
 

@@ -11,6 +11,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\HomeMenuController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ReportController;
 
 Route::get('/', [HomeMenuController::class, 'index'])->name('home');
 Route::get('/cart', [App\Http\Controllers\CartController::class, 'index'])->name('cart.index');
@@ -24,6 +25,8 @@ Route::get('/payment', [App\Http\Controllers\PaymentController::class, 'index'])
 Route::post('/payment/paid', [App\Http\Controllers\PaymentController::class, 'paid'])->name('payment.paid');
 Route::get('/token', [App\Http\Controllers\PaymentController::class, 'token'])->name('payment.token');
 
+
+
 Route::get('/receipt/print/{transactionCode}', [App\Http\Controllers\PaymentController::class, 'print'])
     ->name('receipt.print');
 
@@ -36,19 +39,22 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::get('settings/profile', Profile::class)->name('settings.profile');
         Route::get('settings/password', Password::class)->name('settings.password');
         Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
+        Route::get('/reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/print', [App\Http\Controllers\ReportController::class, 'print'])->name('reports.print');
+
+        Route::resource('users', UserController::class);
+        Route::resource('meja', MejaController::class)->except(['show']);
+        Route::get('meja/{meja}/qrcode', [MejaController::class, 'showQrcode'])->name('meja.qrcode');
+        Route::resource('kategori', KategoriController::class);
+        Route::resource('menu', MenuController::class);
+        Route::get('/order', [App\Http\Controllers\OrderController::class, 'index'])->name('order.index');
+        Route::get('/order/{order}', [OrderController::class, 'detail'])->name('orders.detail');
+        Route::get('/order/confirm/{order}', [OrderController::class, 'confirm'])->name('order.confirm');
+        Route::get('/order/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
+        Route::put('/order/{order}', [OrderController::class, 'update'])->name('orders.update');
+        Route::delete('/order/{order}/details/{detail}', [OrderController::class, 'destroyDetail'])->name('orders.details.destroy');
     });
 
-    Route::resource('users', UserController::class);
-    Route::resource('meja', MejaController::class)->except(['show']);
-    Route::get('meja/{meja}/qrcode', [MejaController::class, 'showQrcode'])->name('meja.qrcode');
-    Route::resource('kategori', KategoriController::class);
-    Route::resource('menu', MenuController::class);
-    Route::get('/order', [App\Http\Controllers\OrderController::class, 'index'])->name('order.index');
-    Route::get('/order/{order}', [OrderController::class, 'detail'])->name('orders.detail');
-    Route::get('/order/confirm/{order}', [OrderController::class, 'confirm'])->name('order.confirm');
-    Route::get('/order/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
-    Route::put('/order/{order}', [OrderController::class, 'update'])->name('orders.update');
-    Route::delete('/order/{order}/details/{detail}', [OrderController::class, 'destroyDetail'])->name('orders.details.destroy');
 
 });
 

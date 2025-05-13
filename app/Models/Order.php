@@ -21,6 +21,7 @@ class Order extends Model
         'payment_method',
         'transaction_code',
         'catatan',
+        'nama',
         'status',
     ];
 

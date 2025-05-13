@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->timestamps();
             $table->integer('meja_id');
+            $table->string('nama');
             $table->datetime('tanggal');
             $table->integer('subtotal');
             $table->integer('tax');

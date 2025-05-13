@@ -89,22 +89,21 @@ class MejaController extends Controller
     
     public function showQrcode($id)
     {
-        try {
-            $meja = Meja::findOrFail($id);
+        $meja = Meja::findOrFail($id);
+        
+        $url = config('app.url') . '/?mejaId=' . $meja->id;
+        $size = request()->integer('size', 300);
+        
+        $qrCode = QrCode::size($size)
+            ->margin(2)
+            ->errorCorrection('H')
+            ->generate($url);
             
-            // Generate URL with table ID parameter
-            $url = config('app.url') . '/?mejaId=' . $meja->id;
-            
-            // Generate QR code (configurable size from request or default)
-            $size = request()->input('size', 300);
-            
-            return QrCode::size($size)
-                ->margin(2)
-                ->errorCorrection('H')  // High error correction
-                ->generate($url);
-                
-        } catch (\Exception $e) {
-            abort(404, 'meja tidak ditemukan');
-        }
+        return view('meja.print', [
+            'qrCode' => $qrCode,
+            'meja' => $meja,
+            'autoPrint' => request()->has('autoprint'),
+            'printTitle' => "QR Code Meja {$meja->nomor}"
+        ]);
     }
 }

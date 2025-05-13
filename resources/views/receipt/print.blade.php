@@ -30,6 +30,10 @@
                         <span class="font-medium text-gray-600">Receipt #:</span>
                         <span class="font-semibold">{{ $transaction->transaction_code }}</span>
                     </div>
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="font-medium text-gray-600">Nama #:</span>
+                        <span class="font-semibold">{{ $transaction->nama }}</span>
+                    </div>
                     <div class="flex justify-between text-sm">
                         <span class="font-medium text-gray-600">Date:</span>
                         <span>{{ $transaction->created_at->format('M d, Y h:i A') }}</span>
@@ -63,6 +67,10 @@
                     <div class="flex justify-between font-bold text-base mt-3 pt-2 border-t border-gray-200">
                         <span>Total:</span>
                         <span>Rp {{ number_format($transaction->subtotal + $transaction->tax, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex flex-col text-base mt-3 pt-2 border-t border-gray-200">
+                        <span class="font-bold">Catatan:</span>
+                        <span>{{$transaction->catatan }}</span>
                     </div>
                 </div>
                 
