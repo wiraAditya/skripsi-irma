@@ -12,6 +12,7 @@
             ['name' => 'Kategori Menu', 'icon' => 'circle-small', 'route' => 'kategori.index', 'show' => ['role_admin']],
             ['name' => 'Menu', 'icon' => 'utensils', 'route' => 'menu.index', 'show' => ['role_admin']],
             ['name' => 'Order', 'icon' => 'banknote-arrow-up', 'route' => 'order.index', 'show' => ['role_kasir', 'role_admin']],
+            ['name' => 'Laporan', 'icon' => 'banknote-arrow-up', 'route' => 'reports.index', 'show' => ['role_admin']],
         ];
     
         $userRole = auth()->user()->role;

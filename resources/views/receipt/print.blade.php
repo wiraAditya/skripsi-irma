@@ -18,10 +18,8 @@
             <div class="receipt-content print:w-80 mx-auto p-6">
                 <!-- Receipt header -->
                 <div class="text-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800 mb-1">Store Name</h1>
-                    <p class="text-gray-600 text-sm">123 Main Street, City</p>
-                    <p class="text-gray-600 text-sm">Phone: (123) 456-7890</p>
-                    <p class="text-gray-600 text-sm">receipt@store.com</p>
+                    <h1 class="text-2xl font-bold text-gray-800 mb-1">Amedian Dapur Restoran</h1>
+                    <p class="text-gray-600 text-sm">jl I Ketut Natih Amed Karangasem</p>
                 </div>
                 
                 <!-- Receipt details -->
