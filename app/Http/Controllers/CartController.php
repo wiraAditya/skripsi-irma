@@ -21,10 +21,10 @@ class CartController extends Controller
 
         // Get existing cart or create empty array
         $cart = session()->get('cart', []);
-        
+
         // Create a unique key for the item in cart
         $cartKey = $itemId;
-        
+
         // Add item to cart
         $cart[$cartKey] = [
             'itemId' => $itemId,
@@ -34,10 +34,10 @@ class CartController extends Controller
             'image' => $image,
             'notes' => $notes
         ];
-        
+
         // Save cart to session
         session()->put('cart', $cart);
-        
+
         // Redirect back with success message
         return redirect()->back()->with('success', 'Item added to cart!');
     }
@@ -49,19 +49,19 @@ class CartController extends Controller
     {
         $tableName = $request->query('mejaId');
         $table = null;
-        
+
         if ($tableName) {
-            $table = Meja::where('id', $tableName)->first();
+            $table = Meja::where('unique_code', $tableName)->first();
         }
         $cartItems = session()->get('cart', []);
-        
+
         $subTotal = 0;
         if (count($cartItems) > 0) {
             foreach ($cartItems as $item) {
                 $subTotal += $item['price'] * $item['quantity'];
             }
         }
-        
+
         return view('home.cart', compact('cartItems', 'subTotal', 'table'));
     }
 
@@ -77,10 +77,10 @@ class CartController extends Controller
         $quantity = $request->quantity;
         $image = $request->image;
         $notes = $request->notes;
-        
+
         // Get current cart
         $cart = session()->get('cart', []);
-        
+
         // Update the item
         if (isset($cart[$index])) {
             $cart[$index] = [
@@ -91,10 +91,10 @@ class CartController extends Controller
                 'image' => $image,
                 'notes' => $notes
             ];
-            
+
             session()->put('cart', $cart);
         }
-        
+
         return redirect()->route('cart.index')->with('success', 'Item updated successfully!');
     }
 
@@ -104,12 +104,12 @@ class CartController extends Controller
     public function remove($index)
     {
         $cart = session()->get('cart', []);
-        
+
         if (isset($cart[$index])) {
             unset($cart[$index]);
             session()->put('cart', $cart);
         }
-        
+
         return redirect()->route('cart.index', request()->query());
     }
 

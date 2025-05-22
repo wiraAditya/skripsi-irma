@@ -13,6 +13,7 @@ class ReportController extends Controller
         // Default date range: first day to last day of current month
         $startDate = $request->input('start_date', Carbon::now()->firstOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', Carbon::now()->lastOfMonth()->format('Y-m-d'));
+        $today = Carbon::now()->format('Y-m-d');
 
         // Validate dates
         $request->validate([
@@ -24,7 +25,15 @@ class ReportController extends Controller
         $reports = Order::where('status', Order::STATUS_PAID)
             ->whereDate('tanggal', '>=', $startDate)
             ->whereDate('tanggal', '<=', $endDate)
-            ->selectRaw('DATE(tanggal) as tanggal_transaksi, COUNT(*) as jumlah_transaksi, SUM(subtotal + tax) as total_pendapatan')
+            ->selectRaw(
+                '
+                DATE(tanggal) as tanggal_transaksi,
+                COUNT(*) as jumlah_transaksi,
+                SUM(subtotal + tax) as total_pendapatan,
+                SUM(CASE WHEN payment_method = "method_cash" THEN subtotal + tax ELSE 0 END) as total_cash,
+                SUM(CASE WHEN payment_method = "method_digital" THEN subtotal + tax ELSE 0 END) as total_digital
+                '
+            )
             ->groupBy('tanggal_transaksi')
             ->orderBy('tanggal_transaksi', 'desc')
             ->get();
@@ -33,20 +42,30 @@ class ReportController extends Controller
         $summary = [
             'total_transaksi' => $reports->sum('jumlah_transaksi'),
             'total_pendapatan' => $reports->sum('total_pendapatan'),
+            'total_cash' => $reports->sum('total_cash'),
+            'total_digital' => $reports->sum('total_digital'),
         ];
 
-        return view('reports.index', compact('reports', 'summary', 'startDate', 'endDate'));
+        return view('reports.index', compact('reports', 'summary', 'startDate', 'endDate', 'today'));
     }
 
     public function print(Request $request)
     {
-        $startDate = $request->input('start_date', Carbon::now()->firstOfMonth()->format('Y-m-d'));
-        $endDate = $request->input('end_date', Carbon::now()->lastOfMonth()->format('Y-m-d'));
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
 
         $reports = Order::where('status', Order::STATUS_PAID)
             ->whereDate('tanggal', '>=', $startDate)
             ->whereDate('tanggal', '<=', $endDate)
-            ->selectRaw('DATE(tanggal) as tanggal_transaksi, COUNT(*) as jumlah_transaksi, SUM(subtotal + tax) as total_pendapatan')
+            ->selectRaw(
+                '
+                DATE(tanggal) as tanggal_transaksi,
+                COUNT(*) as jumlah_transaksi,
+                SUM(subtotal + tax) as total_pendapatan,
+                SUM(CASE WHEN payment_method = "method_cash" THEN subtotal + tax ELSE 0 END) as total_cash,
+                SUM(CASE WHEN payment_method = "method_digital" THEN subtotal + tax ELSE 0 END) as total_digital
+                '
+            )
             ->groupBy('tanggal_transaksi')
             ->orderBy('tanggal_transaksi', 'desc')
             ->get();
@@ -54,6 +73,8 @@ class ReportController extends Controller
         $summary = [
             'total_transaksi' => $reports->sum('jumlah_transaksi'),
             'total_pendapatan' => $reports->sum('total_pendapatan'),
+            'total_cash' => $reports->sum('total_cash'),
+            'total_digital' => $reports->sum('total_digital'),
         ];
 
         $printDate = now()->format('d/m/Y H:i');

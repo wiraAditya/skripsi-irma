@@ -32,7 +32,7 @@ Route::get('/receipt/print/{transactionCode}', [App\Http\Controllers\PaymentCont
 
 Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
-        
+
     Route::middleware(['auth'])->group(function () {
         Route::redirect('settings', 'settings/profile');
 
@@ -41,6 +41,7 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
         Route::get('/reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/print', [App\Http\Controllers\ReportController::class, 'print'])->name('reports.print');
+        Route::get('/reports/print/today', [App\Http\Controllers\ReportController::class, 'print_today'])->name('reports.print.today');
 
         Route::resource('users', UserController::class);
         Route::resource('meja', MejaController::class)->except(['show']);
@@ -54,9 +55,7 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::put('/order/{order}', [OrderController::class, 'update'])->name('orders.update');
         Route::delete('/order/{order}/details/{detail}', [OrderController::class, 'destroyDetail'])->name('orders.details.destroy');
     });
-
-
 });
 
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

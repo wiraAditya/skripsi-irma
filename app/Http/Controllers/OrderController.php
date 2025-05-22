@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Menu;
+use App\Models\OrderDetails;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -37,11 +39,37 @@ class OrderController extends Controller
     ];
     public function index(Request $request)
     {
-        $orders = Order::with('meja')->where('transaction_code', 'like', '%'.$request->search.'%')->latest()->paginate(10);
-        
-        
-       
-        return view('order.index', compact('orders'))->with([
+        $orders = Order::with('meja')
+            ->where('transaction_code', 'like', '%' . $request->search . '%')
+            ->orWhereRelation('meja', 'nama', 'like', '%' . $request->search . '%')
+            ->latest()
+            ->paginate(10);
+
+        $todayOrders = Order::where('status', Order::STATUS_PAID)
+            ->whereDate('tanggal', now()->format('Y-m-d'))
+            ->get();
+
+        $totalPendapatan = 0;
+        $pendapatanCash = 0;
+        $pendapatanDigital = 0;
+
+        foreach ($todayOrders as $key => $order) {
+            if ($order->payment_method == Order::PAYMENT_CASH) {
+                $pendapatanCash += $order->subtotal + $order->tax;
+            }
+            if ($order->payment_method == Order::PAYMENT_DIGITAL) {
+                $pendapatanDigital += $order->subtotal + $order->tax;
+            }
+            $totalPendapatan += $order->subtotal + $order->tax;
+        }
+
+        $summary = [
+            'total_pendapatan' => $totalPendapatan,
+            'pendapatan_cash' => $pendapatanCash,
+            'pendapatan_digital' => $pendapatanDigital,
+        ];
+
+        return view('order.index', compact('orders', 'summary'))->with([
             'statusConfig' => $this->statusConfig,
             'paymentMethodLabels' => $this->paymentMethodLabels
         ]);
@@ -62,22 +90,21 @@ class OrderController extends Controller
         ]);
     }
 
-    public function confirm(Order $order) 
+    public function confirm(Order $order)
     {
         $order->update([
             'status' => Order::STATUS_PAID
         ]);
-        
+
         return redirect()->back()->with('success', 'Pembayaran berhasil dikonfirmasi.');
-    
     }
 
     public function edit(Order $order)
     {
         $order->load(['meja', 'orderDetails.menu']);
-        
+
         $activeMenus = Menu::active()->with('kategori')->get()->groupBy('kategori.nama');
-        
+
         return view('order.edit', compact('order', 'activeMenus'))->with([
             'statusConfig' => $this->statusConfig,
             'paymentMethodLabels' => $this->paymentMethodLabels
@@ -125,7 +152,7 @@ class OrderController extends Controller
                             'catatan' => $itemData['catatan'] ?? "",
                             'harga' => $itemData['harga'],
                         ]);
-                        
+
                         if (isset($itemData['id'])) {
                             $updatedDetailIds[] = $itemData['id'];
                         }
@@ -146,23 +173,22 @@ class OrderController extends Controller
 
             return redirect()->back()
                 ->with('success', 'Pesanan berhasil diperbarui');
-                
-            } catch (\Illuminate\Validation\ValidationException $e) {
-                return redirect()->back()
-                    ->withErrors($e->validator)
-                    ->withInput()
-                    ->with('error', 'Validasi gagal. Periksa kembali data pesanan Anda.');
-            } catch (\Illuminate\Database\QueryException $e) {
-                \Log::error('Database error: ' . $e->getMessage());
-                return redirect()->back()
-                    ->with('error', 'Terjadi kesalahan database. Silakan coba lagi nanti. '.$e->getMessage())
-                    ->withInput();
-            } catch (\Exception $e) {
-                \Log::error('Order update error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-                return redirect()->back()
-                    ->with('error', 'Terjadi kesalahan saat memperbarui pesanan. Silakan coba lagi.')
-                    ->withInput();
-            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput()
+                ->with('error', 'Validasi gagal. Periksa kembali data pesanan Anda.');
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database error: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan database. Silakan coba lagi nanti. ' . $e->getMessage())
+                ->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Order update error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat memperbarui pesanan. Silakan coba lagi.')
+                ->withInput();
+        }
     }
 
     public function destroyDetail(Order $order, OrderDetails $detail)
