@@ -82,4 +82,88 @@ class ReportController extends Controller
 
         return view('reports.print', compact('reports', 'summary', 'startDate', 'endDate', 'printDate', 'period'));
     }
+
+    public function index_daily(Request $request)
+    {
+        $date = $request->input('date', Carbon::now()->format('Y-m-d'));
+
+        // Validate dates
+        $request->validate([
+            'date' => 'sometimes|date',
+        ]);
+
+        $reports = Order::where('status', Order::STATUS_PAID)
+            ->whereDate('tanggal', $date)
+            ->get();
+
+        $totalPendapatan = 0;
+        $totalCash = 0;
+        $totalDigital = 0;
+
+        foreach ($reports as $report) {
+            $totalPendapatan += $report->subtotal + $report->tax;
+            if ($report->payment_method === 'method_cash') {
+                $totalCash += $report->subtotal + $report->tax;
+            } elseif ($report->payment_method === 'method_digital') {
+                $totalDigital += $report->subtotal + $report->tax;
+            }
+        }
+
+        $summary = [
+            'total_penjualan' => $reports->count(),
+            'total_pendapatan' => $totalPendapatan,
+            'total_cash' => $totalCash,
+            'total_digital' => $totalDigital,
+        ];
+
+        $paymentMethodLabels = [
+            Order::PAYMENT_CASH => 'Tunai',
+            Order::PAYMENT_DIGITAL => 'Digital'
+        ];
+
+        return view('reports-daily.index', compact('reports', 'summary', 'date', 'paymentMethodLabels'));
+    }
+
+    public function print_daily(Request $request)
+    {
+        $date = $request->input('date', Carbon::now()->format('Y-m-d'));
+
+        // Validate dates
+        $request->validate([
+            'date' => 'sometimes|date',
+        ]);
+
+        $reports = Order::where('status', Order::STATUS_PAID)
+            ->whereDate('tanggal', $date)
+            ->get();
+
+        $totalPendapatan = 0;
+        $totalCash = 0;
+        $totalDigital = 0;
+
+        foreach ($reports as $report) {
+            $totalPendapatan += $report->subtotal + $report->tax;
+            if ($report->payment_method === 'method_cash') {
+                $totalCash += $report->subtotal + $report->tax;
+            } elseif ($report->payment_method === 'method_digital') {
+                $totalDigital += $report->subtotal + $report->tax;
+            }
+        }
+
+        $summary = [
+            'total_penjualan' => $reports->count(),
+            'total_pendapatan' => $totalPendapatan,
+            'total_cash' => $totalCash,
+            'total_digital' => $totalDigital,
+        ];
+
+        $paymentMethodLabels = [
+            Order::PAYMENT_CASH => 'Tunai',
+            Order::PAYMENT_DIGITAL => 'Digital'
+        ];
+
+        $printDate = now()->format('d/m/Y H:i');
+
+        return view('reports-daily.print', compact('reports', 'summary', 'date', 'printDate', 'paymentMethodLabels'));
+    }
 }

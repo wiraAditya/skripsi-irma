@@ -1,19 +1,14 @@
-<x-layouts.app :title="'Laporan Transaksi'">
+<x-layouts.app :title="'Laporan Harian'">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Laporan Transaksi</h1>
+        <h1 class="text-2xl font-semibold text-gray-900">Laporan Harian</h1>
     </div>
 
     <!-- Filter Form -->
     <div class="bg-white shadow-sm rounded-lg p-6 mb-6">
-        <form method="GET" action="{{ route('reports.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <form method="GET" action="{{ route('reports.index.daily') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <label for="start_date" class="block text-sm font-medium text-gray-700">Tanggal Mulai</label>
-                <input type="date" name="start_date" id="start_date" value="{{ $startDate }}"
-                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            <div>
-                <label for="end_date" class="block text-sm font-medium text-gray-700">Tanggal Akhir</label>
-                <input type="date" name="end_date" id="end_date" value="{{ $endDate }}"
+                <label for="date" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                <input type="date" name="date" id="date" value="{{ $date }}"
                     class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
             </div>
             <div class="flex items-end space-x-2">
@@ -21,11 +16,11 @@
                     class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     Filter
                 </button>
-                <a href="{{ route('reports.index') }}"
+                <a href="{{ route('reports.index.daily') }}"
                     class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
                     Reset
                 </a>
-                <a href="#" target="_blank" id="print-report"
+                <a href="#" target="_blank" id="print-daily-report"
                     class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                     Cetak Laporan
                 </a>
@@ -36,31 +31,27 @@
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-white shadow-sm rounded-lg p-6">
-            <h3 class="text-lg font-medium text-gray-900">Total Transaksi</h3>
-            <p class="mt-2 text-3xl font-semibold text-blue-600">{{ $summary['total_transaksi'] }}</p>
-            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} -
-                {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
+            <h3 class="text-lg font-medium text-gray-900">Total Penjualan</h3>
+            <p class="mt-2 text-3xl font-semibold text-blue-600">{{ $summary['total_penjualan'] }}</p>
+            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900">Total Tunai</h3>
             <p class="mt-2 text-3xl font-semibold text-green-600">Rp
                 {{ number_format($summary['total_cash'], 0, ',', '.') }}</p>
-            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} -
-                {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
+            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900">Total Digital</h3>
             <p class="mt-2 text-3xl font-semibold text-green-600">Rp
                 {{ number_format($summary['total_digital'], 0, ',', '.') }}</p>
-            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} -
-                {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
+            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900">Total Pendapatan</h3>
             <p class="mt-2 text-3xl font-semibold text-green-600">Rp
                 {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}</p>
-            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} -
-                {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
+            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
         </div>
     </div>
 
@@ -77,50 +68,34 @@
                             </th>
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Tanggal
+                                Kode Order
                             </th>
                             <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Jumlah Transaksi
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Cash
+                                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Jenis Bayar
                             </th>
                             <th scope="col"
                                 class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Digital
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Pendapatan
+                                Total
                             </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($reports as $index => $report)
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ $loop->iteration }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">
-                                        {{ \Carbon\Carbon::parse($report->tanggal_transaksi)->format('d/m/Y') }}</div>
+                                    <div class="text-sm text-gray-900">{{ $report['transaction_code'] }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <div class="text-sm text-gray-900">{{ $report->jumlah_transaksi }}</div>
+                                    <div class="text-sm text-gray-900">
+                                        {{ $paymentMethodLabels[$report->payment_method] }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <div class="text-sm text-gray-900">Rp
-                                        {{ number_format($report->total_cash, 0, ',', '.') }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right">
-                                    <div class="text-sm text-gray-900">Rp
-                                        {{ number_format($report->total_digital, 0, ',', '.') }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right">
-                                    <div class="text-sm text-gray-900">Rp
-                                        {{ number_format($report->total_pendapatan, 0, ',', '.') }}</div>
+                                        {{ number_format(($report['subtotal'] + $report['tax']), 0, ',', '.') }}</div>
                                 </td>
                             </tr>
                         @empty
@@ -134,17 +109,8 @@
                     </tbody>
                     <tfoot class="bg-gray-50">
                         <tr>
-                            <th colspan="2" class="px-6 py-4 text-left text-sm font-medium text-gray-900">
+                            <th colspan="3" class="px-6 py-4 text-left text-sm font-medium text-gray-900">
                                 TOTAL
-                            </th>
-                            <th class="px-6 py-4 text-center text-sm font-medium text-gray-900">
-                                {{ $summary['total_transaksi'] }}
-                            </th>
-                            <th class="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                                Rp {{ number_format($summary['total_cash'], 0, ',', '.') }}
-                            </th>
-                            <th class="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                                Rp {{ number_format($summary['total_digital'], 0, ',', '.') }}
                             </th>
                             <th class="px-6 py-4 text-right text-sm font-medium text-gray-900">
                                 Rp {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}
@@ -159,15 +125,14 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const printBtn = document.getElementById('print-report');
+                const printBtn = document.getElementById('print-daily-report');
 
                 printBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const startDate = document.getElementById('start_date').value;
-                    const endDate = document.getElementById('end_date').value;
+                    const date = document.getElementById('date').value;
 
                     // Ganti route sesuai kebutuhan
-                    const url = `{{ route('reports.print') }}?start_date=${startDate}&end_date=${endDate}`;
+                    const url = `{{ route('reports.print.daily') }}?date=${date}`;
                     window.open(url, '_blank');
                 });
             });
