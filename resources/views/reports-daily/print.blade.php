@@ -23,8 +23,8 @@
             <div class="report-content print:w-full mx-auto p-6">
                 <!-- Header -->
                 <div class="text-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800">LAPORAN TRANSAKSI</h1>
-                    <p class="text-gray-600 mt-2">Periode: {{ $period }}</p>
+                    <h1 class="text-2xl font-bold text-gray-800">LAPORAN HARIAN</h1>
+                    <p class="text-gray-600 mt-2">Periode: {{ $date }}</p>
                     <p class="text-gray-500 text-sm">Dicetak pada: {{ $printDate }}</p>
                 </div>
 
@@ -39,23 +39,15 @@
                                 </th>
                                 <th scope="col"
                                     class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Tanggal
-                                </th>
-                                <th scope="col"
-                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Jumlah Transaksi
+                                    Kode
                                 </th>
                                 <th scope="col"
                                     class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total Cash
+                                    Jenis Bayar
                                 </th>
                                 <th scope="col"
                                     class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total Digital
-                                </th>
-                                <th scope="col"
-                                    class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total Pendapatan
+                                    Total
                                 </th>
                             </tr>
                         </thead>
@@ -65,20 +57,14 @@
                                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
                                         {{ $loop->iteration }}
                                     </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                        {{ \Carbon\Carbon::parse($report->tanggal_transaksi)->format('d/m/Y') }}
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                                        {{ $report->transaction_code }}
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                                        {{ $report->jumlah_transaksi }}
+                                        {{ $paymentMethodLabels[$report->payment_method] }}
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
-                                        Rp {{ number_format($report->total_cash, 0, ',', '.') }}
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
-                                        Rp {{ number_format($report->total_digital, 0, ',', '.') }}
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
-                                        Rp {{ number_format($report->total_pendapatan, 0, ',', '.') }}
+                                        Rp {{ number_format(($report->subtotal + $report->tax), 0, ',', '.') }}
                                     </td>
                                 </tr>
                             @empty
@@ -92,17 +78,8 @@
                         </tbody>
                         <tfoot class="bg-gray-50">
                             <tr>
-                                <th colspan="2" class="px-4 py-3 text-left text-sm font-medium text-gray-900">
+                                <th colspan="3" class="px-4 py-3 text-left text-sm font-medium text-gray-900">
                                     TOTAL
-                                </th>
-                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-900">
-                                    {{ $summary['total_transaksi'] }}
-                                </th>
-                                <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">
-                                    Rp {{ number_format($summary['total_cash'], 0, ',', '.') }}
-                                </th>
-                                <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">
-                                    Rp {{ number_format($summary['total_digital'], 0, ',', '.') }}
                                 </th>
                                 <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">
                                     Rp {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}

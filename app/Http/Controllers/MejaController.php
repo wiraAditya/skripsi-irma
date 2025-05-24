@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Meja;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class MejaController extends Controller
@@ -41,6 +42,11 @@ class MejaController extends Controller
         }
         $validated['is_active'] = $request->has('is_active') ? (bool) 1 : 0;
 
+        do {
+            $code = Str::upper(Str::random(8));
+        } while (Meja::where('unique_code', $code)->exists());
+
+        $validated['unique_code'] = $code;
 
         Meja::create($validated);
 
@@ -86,19 +92,19 @@ class MejaController extends Controller
         return redirect()->route('meja.index')
             ->with('success', 'Meja berhasil dihapus.');
     }
-    
+
     public function showQrcode($id)
     {
         $meja = Meja::findOrFail($id);
-        
-        $url = config('app.url') . '/?mejaId=' . $meja->id;
+
+        $url = config('app.url') . '/?mejaId=' . $meja->unique_code;
         $size = request()->integer('size', 300);
-        
+
         $qrCode = QrCode::size($size)
             ->margin(2)
             ->errorCorrection('H')
             ->generate($url);
-            
+
         return view('meja.print', [
             'qrCode' => $qrCode,
             'meja' => $meja,

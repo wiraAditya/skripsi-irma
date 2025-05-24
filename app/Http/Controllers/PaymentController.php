@@ -16,16 +16,17 @@ class PaymentController extends HomeBaseController
     {
         $this->midtransService = $midtransService;
     }
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
         $tableName = $request->query('mejaId');
         $table = null;
-        
+
         if ($tableName) {
-            $table = Meja::where('id', $tableName)->first();
+            $table = Meja::where('unique_code', $tableName)->first();
         }
         $cartItems = session()->get('cart', []);
         if (empty($cartItems)) {
-            return redirect()->to('/?mejaId='.$tableName)->with('error', 'Your cart is empty. Please add items before proceeding to payment.');
+            return redirect()->to('/?mejaId=' . $tableName)->with('error', 'Your cart is empty. Please add items before proceeding to payment.');
         }
         $subTotal = 0;
         if (count($cartItems) > 0) {
@@ -33,20 +34,20 @@ class PaymentController extends HomeBaseController
                 $subTotal += $item['price'] * $item['quantity'];
             }
         }
-        
+
         return view('home.payment', compact('cartItems', 'subTotal', 'table'));
     }
 
-    public function paid(Request $request) {
-                 
+    public function paid(Request $request)
+    {
         $method = in_array($request->input('method'), ["method_cash", "method_digital"]) ? $request->input('method') : "method_cash";
-        
+
         $cartItems = session()->get('cart', []);
         $mejaId = $request->input('mejaId');
-        if (empty($cartItems)) {
-            return redirect()->to('/?mejaId='.$tableName)->with('error', 'Your cart is empty. Please add items before proceeding to payment.');
-            
+        $meja = Meja::where('unique_code', $mejaId)->firstOrFail();
 
+        if (empty($cartItems)) {
+            return redirect()->to('/?mejaId=' . $tableName)->with('error', 'Your cart is empty. Please add items before proceeding to payment.');
         }
 
         $subTotal = 0;
@@ -60,7 +61,7 @@ class PaymentController extends HomeBaseController
         $transactionCode = 'TRX-' . time() . '-' . rand(1000, 9999);
 
         $order = Order::create([
-            'meja_id' => $mejaId,
+            'meja_id' => $meja->id,
             'tanggal' => now(),
             'subtotal' => $subTotal,
             'tax' => $tax,
@@ -85,7 +86,7 @@ class PaymentController extends HomeBaseController
 
         return view('payment-success', [
             'transactionCode' => $transactionCode,
-            'mejaId' => $mejaId,
+            'mejaId' => $meja->unique_code,
             'method' => $method
         ]);
     }
@@ -108,8 +109,8 @@ class PaymentController extends HomeBaseController
         }
         $transactionCode = 'TRX-' . time() . '-' . rand(1000, 9999);
 
-        $tax = $subTotal *(10/100);
-        $gt = $subTotal+$tax;
+        $tax = $subTotal * (10 / 100);
+        $gt = $subTotal + $tax;
         $params = [
             'transaction_details' => [
                 'order_id' => $transactionCode,
@@ -120,13 +121,11 @@ class PaymentController extends HomeBaseController
         try {
             // Create Snap transaction
             $snapToken = $this->midtransService->createTransaction($params);
-            
+
             // Return view with Snap token
             return response()->json($snapToken);
-
         } catch (\Exception $e) {
             print_r($e->getMessage());
         }
-
     }
 }

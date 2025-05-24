@@ -9,7 +9,7 @@ use Illuminate\Routing\Controller as BaseController;
 class HomeBaseController extends BaseController
 {
     protected $mejaId;
-    
+
     public function __construct()
     {
         $this->middleware(function ($request, $next) {
@@ -18,11 +18,11 @@ class HomeBaseController extends BaseController
             }
             // Store the valid mejaId for use in child controllers
             $this->mejaId = $request->mejaId;
-            
+
             return $next($request);
         });
     }
-    
+
     /**
      * Check if the table ID is valid
      *
@@ -31,6 +31,6 @@ class HomeBaseController extends BaseController
      */
     protected function isValidMeja($mejaId)
     {
-        return Meja::where('id', $mejaId)->exists();
+        return Meja::where('unique_code', $mejaId)->exists();
     }
 }

@@ -13,30 +13,31 @@
             ['name' => 'Menu', 'icon' => 'utensils', 'route' => 'menu.index', 'show' => ['role_admin']],
             ['name' => 'Order', 'icon' => 'banknote-arrow-up', 'route' => 'order.index', 'show' => ['role_kasir', 'role_admin']],
             ['name' => 'Laporan', 'icon' => 'banknote-arrow-up', 'route' => 'reports.index', 'show' => ['role_admin']],
+            ['name' => 'Laporan Harian', 'icon' => 'banknote-arrow-up', 'route' => 'reports.index.daily', 'show' => ['role_admin']],
         ];
-    
+
         $userRole = auth()->user()->role;
-    
+
         // Filter the menu items based on the user's role
         $sidebarMenu = array_filter($sidebarMenu, function ($menuItem) use ($userRole) {
             return in_array($userRole, $menuItem['show']);
         });
     @endphp
-    
+
 
         <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
             <a href="{{ route('dashboard') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
                 <x-app-logo />
             </a>
- 
+
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid gap-2">
                     @foreach($sidebarMenu as $menuItem)
-                        <flux:navlist.item 
-                            icon="{{ $menuItem['icon'] }}" 
-                            :href="route($menuItem['route'])" 
-                            :current="request()->routeIs($menuItem['route'])" 
+                        <flux:navlist.item
+                            icon="{{ $menuItem['icon'] }}"
+                            :href="route($menuItem['route'])"
+                            :current="request()->routeIs($menuItem['route'])"
                             wire:navigate
                             class="mb-2"
                         >
@@ -147,5 +148,7 @@
         {{ $slot }}
 
         @fluxScripts
+        @stack('scripts')
+
     </body>
 </html>
