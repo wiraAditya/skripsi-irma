@@ -12,6 +12,7 @@ use App\Http\Controllers\HomeMenuController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', [HomeMenuController::class, 'index'])->name('home');
 Route::get('/cart', [App\Http\Controllers\CartController::class, 'index'])->name('cart.index');
@@ -31,8 +32,9 @@ Route::get('/receipt/print/{transactionCode}', [App\Http\Controllers\PaymentCont
     ->name('receipt.print');
 
 Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
-        
+
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
     Route::middleware(['auth'])->group(function () {
         Route::redirect('settings', 'settings/profile');
 
@@ -41,6 +43,8 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::get('settings/appearance', Appearance::class)->name('settings.appearance');
         Route::get('/reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/print', [App\Http\Controllers\ReportController::class, 'print'])->name('reports.print');
+        Route::get('/reports/daily', [App\Http\Controllers\ReportController::class, 'index_daily'])->name('reports.index.daily');
+        Route::get('/reports/daily/print', [App\Http\Controllers\ReportController::class, 'print_daily'])->name('reports.print.daily');
 
         Route::resource('users', UserController::class);
         Route::resource('meja', MejaController::class)->except(['show']);
@@ -54,9 +58,7 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         Route::put('/order/{order}', [OrderController::class, 'update'])->name('orders.update');
         Route::delete('/order/{order}/details/{detail}', [OrderController::class, 'destroyDetail'])->name('orders.details.destroy');
     });
-
-
 });
 
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

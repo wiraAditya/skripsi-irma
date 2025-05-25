@@ -14,28 +14,28 @@ class HomeMenuController extends HomeBaseController
     {
         parent::__construct(); // Add this line to call parent constructor
     }
-    
+
     public function index(Request $request)
     {
         // Get the table if provided
         $tableName = $request->query('mejaId');
         $table = null;
-        
+
         if ($tableName) {
-            $table = Meja::where('id', $tableName)->first();
+            $table = Meja::where('unique_code', $tableName)->first();
         }
         // Get all active menu categories
         $menuCategories = Kategori::where('is_active', true)->get();
-        
+
         // Get category filter from query parameter if it exists
         $categoryId = $request->query('category', 0);
-        
+
         // Get filtered menu items based on category
         $menus = $this->getFilteredMenus($categoryId);
-        
+
         // Get the current category for highlighting in the UI
         $currentCategoryId = $categoryId;
-        
+
         return view('home.index', compact('menus', 'menuCategories', 'table', 'currentCategoryId'));
     }
 
@@ -51,5 +51,4 @@ class HomeMenuController extends HomeBaseController
                 ->get();
         }
     }
-    
 }
