@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Meja;
 use App\Models\Order;
 use App\Models\Menu;
 use App\Models\OrderDetails;
@@ -39,9 +40,21 @@ class OrderController extends Controller
     ];
     public function index(Request $request)
     {
+        $kode = $request->query('kode') ?? null;
+        $date = $request->query('date') ?? Carbon::now()->format('Y-m-d');
+        $mejaId = $request->query('meja') ?? null;
+
         $orders = Order::with('meja')
             ->where('transaction_code', 'like', '%' . $request->search . '%')
-            ->orWhereRelation('meja', 'nama', 'like', '%' . $request->search . '%')
+            ->when($kode, function ($query) use ($kode) {
+                return $query->where('transaction_code', 'like', '%' . $kode . '%');
+            })
+            ->when($date, function ($query) use ($date) {
+                return $query->whereDate('tanggal', $date);
+            })
+            ->when($mejaId, function ($query) use ($mejaId) {
+                return $query->where('meja_id', $mejaId);
+            })
             ->latest()
             ->paginate(10);
 
@@ -69,7 +82,9 @@ class OrderController extends Controller
             'pendapatan_digital' => $pendapatanDigital,
         ];
 
-        return view('order.index', compact('orders', 'summary'))->with([
+        $mejas = Meja::all();
+
+        return view('order.index', compact('orders', 'summary', 'mejas', 'date', 'mejaId'))->with([
             'statusConfig' => $this->statusConfig,
             'paymentMethodLabels' => $this->paymentMethodLabels
         ]);
