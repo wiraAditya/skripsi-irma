@@ -12,6 +12,7 @@ use App\Http\Controllers\HomeMenuController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', [HomeMenuController::class, 'index'])->name('home');
 Route::get('/cart', [App\Http\Controllers\CartController::class, 'index'])->name('cart.index');
@@ -31,7 +32,8 @@ Route::get('/receipt/print/{transactionCode}', [App\Http\Controllers\PaymentCont
     ->name('receipt.print');
 
 Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::middleware(['auth'])->group(function () {
         Route::redirect('settings', 'settings/profile');
