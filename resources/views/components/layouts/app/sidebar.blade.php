@@ -6,7 +6,7 @@
     <body class="min-h-screen bg-gray-100 dark:bg-zinc-800">
     @php
         $sidebarMenu = [
-            ['name' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard', 'show' => ['role_admin']],
+            ['name' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard', 'show' => ['role_kasir', 'role_admin']],
             ['name' => 'User', 'icon' => 'user', 'route' => 'users.index', 'show' => ['role_admin']],
             ['name' => 'Meja', 'icon' => 'grid-3x3', 'route' => 'meja.index', 'show' => ['role_admin']],
             ['name' => 'Kategori Menu', 'icon' => 'circle-small', 'route' => 'kategori.index', 'show' => ['role_admin']],

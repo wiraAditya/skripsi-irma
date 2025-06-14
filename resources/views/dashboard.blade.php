@@ -1,7 +1,10 @@
 <x-layouts.app :title="'Dashboard'">
-    <script src="{{ asset('build/assets/app.js') }}"></script>
     <div class="flex w-full flex-1 flex-col gap-4 p-4 md:p-6">
         <!-- Filters -->
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
+        Selamat datang di Dashboard, {{ auth()->user()->name }}!
+        </div>
+        @if(auth()->user()->role === "role_admin"):
         <div class="mb-4 flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
             <h2 class="text-lg font-semibold text-gray-700">Filter Data</h2>
             <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap gap-4">
@@ -59,13 +62,12 @@
                 </div>
             </div>
         </div>
+        @endif
     </div>
 
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
+        function initiateCharts() {
             const incomeLineCtx = document.getElementById('incomeLineChart').getContext('2d');
             const bestSellingMenuCtx = document.getElementById('bestSellingMenuChart').getContext('2d');
             const mostOccupiedTablesCtx = document.getElementById('mostOccupiedTablesChart').getContext('2d');
@@ -276,6 +278,13 @@
                     }
                 }
             });
-        });
+        }
+        
+        if (document.readyState === 'complete') {
+            initiateCharts();
+        } else {
+            document.addEventListener('DOMContentLoaded', initiateCharts);
+        }
+        document.addEventListener('turbo:load', initiateCharts);
     </script>
 </x-layouts.app>
