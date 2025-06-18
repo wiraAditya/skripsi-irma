@@ -52,11 +52,11 @@
                     <div class="space-y-3">
                         <div class="flex">
                             <span class="text-gray-500 w-40">Subtotal</span>
-                            <span class="font-medium">Rp {{ number_format($order->subtotal, 0, ',', '.') }}</span>
+                            <span class="font-medium">Rp {{ number_format($order->subtotal ?? 0, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex">
                             <span class="text-gray-500 w-40">Pajak</span>
-                            <span class="font-medium">Rp {{ number_format($order->tax, 0, ',', '.') }}</span>
+                            <span class="font-medium">Rp {{ number_format($order->tax ?? 0, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex border-t border-gray-200 pt-2">
                             <span class="text-gray-500 w-40 font-bold">Total</span>
@@ -117,7 +117,7 @@
                                     <div class="text-sm text-gray-900">{{ $item->menu->nama }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">Rp {{ number_format($item->harga, 0, ',', '.') }}</div>
+                                    <div class="text-sm text-gray-900">Rp {{ number_format($item->harga ?? 0, 0, ',', '.') }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ $item->qty }}</div>
@@ -143,22 +143,122 @@
     </div>
 
     <!-- Action Buttons -->
-        <div class="mt-6 flex justify-end space-x-4">
-          <a 
-              href="{{ route('orders.edit', $order) }}" 
-              class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-          >
-              Edit Pesanan
-          </a>
-          @if($order->status === \App\Models\Order::STATUS_WAITING_CASH)
-                <form method="PATCH" action="{{ route('order.confirm', [$order]) }}">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        Konfirmasi Pembayaran
-                    </button>
-                </form>
-            @endif
+    <div class="mt-6 flex justify-end space-x-4">
+        <a href="{{ route('receipt.print', ['transactionCode' => $order->transaction_code, 'mejaId' => $mejaId ?? null]) }}" target="_blank" class="inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            Struk
+        </a>
+        <a 
+            href="{{ route('orders.edit', $order) }}" 
+            class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+        >
+            Edit Pesanan
+        </a>
+        @if($order->status === \App\Models\Order::STATUS_WAITING_CASH)
+            <button 
+                type="button" 
+                onclick="openPaymentModal()"
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+                Konfirmasi Pembayaran
+            </button>
+        @endif
+    </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div id="paymentModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form method="POST" action="{{ route('order.confirm', [$order]) }}">
+                    @csrf
+                    @method('GET')
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
+                            Konfirmasi Pembayaran
+                        </h3>
+                        <div class="space-y-4">
+                           <flux:input
+                                    name="nama"
+                                    id="nama"
+                                    label="Total yang harus dibayar"
+                                    type="text"
+                                    :value="'Rp ' . number_format(($order->subtotal ?? 0) + ($order->tax ?? 0), 0, ',', '.')"
+                                    required
+                                    autofocus
+                                />
+                                <flux:input
+                                        type="number" 
+                                        label="Jumlah yang dibayarkan"
+                                        name="amount_paid" 
+                                        id="amountPaid" 
+                                        required
+                                        oninput="calculateChange()"
+                                />
+                                <flux:input
+                                        type="text" 
+                                        label="Kembalian"
+                                        name="amount_paid" 
+                                        id="changeAmount" 
+                                        readonly
+                                />
+                            
+                            <
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button 
+                            type="submit" 
+                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                        >
+                            Konfirmasi
+                        </button>
+                        <button 
+                            type="button" 
+                            onclick="closePaymentModal()"
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                        >
+                            Batal
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
+    </div>
+
+    <script>
+        function openPaymentModal() {
+            document.getElementById('paymentModal').classList.remove('hidden');
+            document.getElementById('amountPaid').focus();
+        }
+        
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.add('hidden');
+        }
+        
+        function calculateChange() {
+            const totalAmount = <?= $order->subtotal + $order->tax ?>;
+            const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+            const change = amountPaid - totalAmount;
+            
+            document.getElementById('changeAmount').value = formatCurrency(change);
+        }
+        
+        function formatCurrency(amount) {
+            return 'Rp ' + Math.abs(amount).toLocaleString('id-ID');
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('paymentModal');
+            if (event.target === modal) {
+                closePaymentModal();
+            }
+        }
+    </script>
 </x-layouts.app>
