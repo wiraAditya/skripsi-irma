@@ -10,4 +10,5 @@
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
-@vite(['resources/css/app.css', 'resources/js/app.js'])
+<link rel="stylesheet" href="{{ asset('build/assets/app-B_0Pt7I4.css') }}">
+<script src="{{ asset('build/assets/app-D6pZv4Mv.js') }}" defer></script>
