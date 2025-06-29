@@ -1,6 +1,6 @@
 <x-layouts.app :title="'Laporan Transaksi'">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Laporan Transaksi</h1>
+        <h1 class="text-2xl font-semibold text-gray-900">Laporan Penjualan</h1>
     </div>
 
     <!-- Filter Form -->
@@ -26,6 +26,7 @@
                     Reset
                 </a>
                 <a href="#" target="_blank" id="print-report"
+                    onclick="handlePrintReport(event)"
                     class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                     Cetak Laporan
                 </a>
@@ -156,22 +157,19 @@
         </div>
     </div>
 
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const printBtn = document.getElementById('print-report');
+    <script>
+    function handlePrintReport(event) {
+        try {
+            event.preventDefault();
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
 
-                printBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const startDate = document.getElementById('start_date').value;
-                    const endDate = document.getElementById('end_date').value;
-
-                    // Ganti route sesuai kebutuhan
-                    const url = `{{ route('reports.print') }}?start_date=${startDate}&end_date=${endDate}`;
-                    window.open(url, '_blank');
-                });
-            });
-        </script>
-    @endpush
+            const url = `{{ route('reports.print') }}?start_date=${startDate}&end_date=${endDate}`;
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+</script>
 
 </x-layouts.app>

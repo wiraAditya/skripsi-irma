@@ -21,6 +21,7 @@
                     Reset
                 </a>
                 <a href="#" target="_blank" id="print-daily-report"
+                    onclick="handlePrintDailyReport(event)"
                     class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                     Cetak Laporan
                 </a>
@@ -122,21 +123,19 @@
         </div>
     </div>
 
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const printBtn = document.getElementById('print-daily-report');
+    <script>
+        function handlePrintDailyReport(event) {
+            try {
+                event.preventDefault();
+                const date = document.getElementById('date').value;
 
-                printBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const date = document.getElementById('date').value;
-
-                    // Ganti route sesuai kebutuhan
-                    const url = `{{ route('reports.print.daily') }}?date=${date}`;
-                    window.open(url, '_blank');
-                });
-            });
-        </script>
-    @endpush
+                // Ganti route sesuai kebutuhan
+                const url = `{{ route('reports.print.daily') }}?date=${date}`;
+                window.open(url, '_blank');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    </script>
 
 </x-layouts.app>
