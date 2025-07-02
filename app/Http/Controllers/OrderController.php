@@ -6,9 +6,12 @@ use App\Models\Meja;
 use App\Models\Order;
 use App\Models\Menu;
 use App\Models\OrderDetails;
+use App\Models\CashierSession;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+
 
 class OrderController extends Controller
 {
@@ -34,17 +37,21 @@ class OrderController extends Controller
             'label' => 'Dibatalkan'
         ],
     ];
+    
     protected $paymentMethodLabels = [
         Order::PAYMENT_CASH => 'Tunai',
         Order::PAYMENT_DIGITAL => 'Digital'
     ];
+    
     public function index(Request $request)
     {
         $kode = $request->query('kode') ?? null;
         $date = $request->query('date') ?? Carbon::now()->format('Y-m-d');
         $mejaId = $request->query('meja') ?? null;
 
-        $orders = Order::with('meja')
+        // Get orders with refund sum calculation
+        $orders = Order::with(['meja'])
+            ->withSum('refunds', 'refund_amount')
             ->where('transaction_code', 'like', '%' . $request->search . '%')
             ->when($kode, function ($query) use ($kode) {
                 return $query->where('transaction_code', 'like', '%' . $kode . '%');
@@ -58,37 +65,67 @@ class OrderController extends Controller
             ->latest()
             ->paginate(10);
 
-        $todayOrders = Order::where('status', Order::STATUS_PAID)
+        // Get today's paid orders with refund sum
+        $todayOrders = Order::withSum('refunds', 'refund_amount')
+            ->where('status', Order::STATUS_PAID)
             ->whereDate('tanggal', now()->format('Y-m-d'))
             ->get();
 
         $totalPendapatan = 0;
         $pendapatanCash = 0;
         $pendapatanDigital = 0;
+        $totalRefund = 0;
+        $grossPendapatan = 0;
 
-        foreach ($todayOrders as $key => $order) {
+        foreach ($todayOrders as $order) {
+            $orderRefund = $order->refunds_sum_refund_amount ?? 0;
+            $totalRefund += $orderRefund;
+            
+            $orderTotal = $order->subtotal + $order->tax;
+            $grossPendapatan += $orderTotal;
+            
+            $netAmount = $orderTotal - $orderRefund;
+
             if ($order->payment_method == Order::PAYMENT_CASH) {
-                $pendapatanCash += $order->subtotal + $order->tax;
+                $pendapatanCash += $netAmount;
             }
             if ($order->payment_method == Order::PAYMENT_DIGITAL) {
-                $pendapatanDigital += $order->subtotal + $order->tax;
+                $pendapatanDigital += $netAmount;
             }
-            $totalPendapatan += $order->subtotal + $order->tax;
+            $totalPendapatan += $netAmount;
         }
 
         $summary = [
             'total_pendapatan' => $totalPendapatan,
             'pendapatan_cash' => $pendapatanCash,
             'pendapatan_digital' => $pendapatanDigital,
+            'total_refund' => $totalRefund,
+            'gross_pendapatan' => $grossPendapatan,
         ];
 
         $mejas = Meja::all();
+        
+        $cashierSession = CashierSession::with('user')
+            ->where('user_id', auth()->id())
+            ->where('status', 'open')
+            ->first();
+        
+        $needValidateSession = Auth::user()->role == 'role_kasir';
 
-        return view('order.index', compact('orders', 'summary', 'mejas', 'date', 'mejaId'))->with([
+        return view('order.index', compact(
+            'orders', 
+            'summary', 
+            'mejas', 
+            'date', 
+            'mejaId',
+            'cashierSession',
+            'needValidateSession'
+        ))->with([
             'statusConfig' => $this->statusConfig,
             'paymentMethodLabels' => $this->paymentMethodLabels
         ]);
     }
+
     public function detail(Order $order)
     {
         // Load relationships
@@ -107,13 +144,47 @@ class OrderController extends Controller
 
     public function confirm(Order $order)
     {
+        // Get the current authenticated user
+        $userId = auth()->id();
+        
+        // Check for active cashier session
+        $session = CashierSession::where('user_id', $userId)
+            ->where('status', 'open')
+            ->first();
+
+        if (!$session) {
+            return redirect()->back()
+                ->with('error', 'Buka sesi kasir terlebih dahulu sebelum konfirmasi pembayaran');
+        }
+
+        // Update the order
         $order->update([
-            'status' => Order::STATUS_PAID
+            'status' => Order::STATUS_PAID,
+            'user_id' => $session->id
         ]);
 
-        return redirect()->back()->with('success', 'Pembayaran berhasil dikonfirmasi.');
+        return redirect()->back()
+            ->with('success', 'Pembayaran berhasil dikonfirmasi dan tercatat dalam sesi kasir');
+    }
+    
+    public function process(Order $order)
+    {
+        $order->update([
+            'status' => Order::STATUS_PROCESS
+        ]);
+
+        return redirect()->back()->with('success', 'Pembayaran berhasil diproses.');
     }
 
+    public function done(Order $order)
+    {
+        $order->update([
+            'status' => Order::STATUS_DONE
+        ]);
+
+        return redirect()->back()->with('success', 'Pembayaran berhasil diselesaikan.');
+    }
+    
     public function edit(Order $order)
     {
         $order->load(['meja', 'orderDetails.menu']);

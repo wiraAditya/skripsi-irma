@@ -1,8 +1,8 @@
-<x-layouts.app :title="'Users'">
+<x-layouts.app :title="'Refunds'">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Users</h1>
-        <a href="{{ route('users.create') }}" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            Tambah
+        <h1 class="text-2xl font-semibold text-gray-900">Refund History</h1>
+        <a href="{{ route('refunds.create') }}" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Create Refund
         </a>
     </div>
     
@@ -20,13 +20,19 @@
                                 No
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                User
+                                Order ID
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Email
+                                Amount
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Role
+                                Method
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Actions
@@ -34,53 +40,51 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse($users as $index => $user)
+                        @forelse($refunds as $index => $refund)
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-gray-900">
-                                              {{ ($users->currentPage() - 1) * $users->perPage() + $loop->iteration }}
+                                              {{ ($refunds->currentPage() - 1) * $refunds->perPage() + $loop->iteration }}
                                             </div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">
-                                                {{ $user->name }}
-                                            </div>
-                                        </div>
+                                    <div class="text-sm text-gray-900">#{{ $refund->order->transaction_code }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        Rp {{ number_format($refund->refund_amount, 0, ',', '.') }}
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $user->email }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $user->role === 'role_admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
-                                        {{ $user->getRoleName() }}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {{ $refund->refund_method === 'cash' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
+                                        {{ ucfirst($refund->refund_method) }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    @if($user->role !== "role_admin")
-                                    <div class="flex space-x-2">
-                                        <a href="{{ route('users.edit', $user) }}" class="bg-yellow-500 hover:bg-yellow-600 text-black rounded-sm px-2.5 py-1">Edit</a>
-                                        <button
-                                            class="bg-red-700 hover:bg-red-900 text-white rounded-sm px-2.5 py-1"
-                                            type="button"
-                                            onclick="showModal('deleteModal', '{{ route('users.destroy', $user) }}')"
-                                        >
-                                            Delete
-                                        </button>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        {{ ucfirst($refund->status) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {{ $refund->created_at->format('d M Y H:i') }}
                                     </div>
-                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <a href="{{ route('refunds.show', $refund) }}" class="text-blue-600 hover:text-blue-900">
+                                        View
+                                    </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                    Tidak ada data user.
+                                <td colspan="7" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                    No refund records found.
                                 </td>
                             </tr>
                         @endforelse
@@ -88,16 +92,8 @@
                 </table>
             </div>
             <div class="mt-4">
-                {{ $users->links() }}
+                {{ $refunds->links() }}
             </div>
         </div>
     </div>
-    
-    <x-delete-modal
-        modalId="deleteModal"
-        modalTitle="Hapus User"
-        message="Apakah Anda yakin ingin menghapus user ini? Data yang sudah dihapus tidak dapat dikembalikan."
-        formId="deleteForm"
-    >
-    </x-delete-modal>
 </x-layouts.app>

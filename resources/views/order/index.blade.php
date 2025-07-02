@@ -28,23 +28,62 @@
         </form>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <!-- Cashier Session Status Card -->
+    @if($needValidateSession)
+        <div class="mb-6 p-4 rounded-lg {{ $cashierSession ? 'bg-blue-50 border border-blue-200' : 'bg-yellow-50 border border-yellow-200' }}">
+            @if ($cashierSession)
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-lg text-blue-800">Sesi Kasir Aktif</h3>
+                        <p class="text-sm">Dibuka: {{ $cashierSession->start_time->format('d/m/Y H:i') }}</p>
+                        <p class="text-sm">Saldo Awal: Rp {{ number_format($cashierSession->starting_cash, 0, ',', '.') }}</p>
+                        <p class="text-sm">Sesi Kasir: {{ $cashierSession->user->name }} -- {{ $cashierSession->user->email }}</p>
+                    </div>
+                    <a href="{{ route('admin.sessions.close', $cashierSession->id) }}" 
+                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm">
+                        Tutup Sesi
+                    </a>
+                </div>
+            @else
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-lg text-yellow-800">Kasir Belum Dibuka</h3>
+                        <p class="text-sm">Silakan buka sesi kasir untuk memproses pembayaran tunai</p>
+                    </div>
+                    <a href="{{ route('admin.sessions.open') }}" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                        Buka Sesi Kasir
+                    </a>
+                </div>
+            @endif
+        </div>
+    @endif
+    <!-- Revenue Summary Cards -->
+     @if(auth()->user()->role != "role_dapur")
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-white shadow-sm rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900">Total Pendapatan Hari Ini</h3>
-            <p class="mt-2 text-3xl font-semibold text-green-600">Rp
-                {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}</p>
+            <p class="mt-2 text-3xl font-semibold text-green-600">Rp {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}</p>
+            <div class="text-sm text-gray-500 mt-1">
+                <span class="{{ $summary['total_refund'] > 0 ? 'text-red-500' : 'text-gray-500' }}">
+                    Refund: Rp {{ number_format($summary['total_refund'], 0, ',', '.') }}
+                </span>
+            </div>
         </div>
         <div class="bg-white shadow-sm rounded-lg p-6">
-            <h3 class="text-lg font-medium text-gray-900">Pendapatan Cash Hari Ini</h3>
-            <p class="mt-2 text-xl font-semibold text-green-600">Rp
-                {{ number_format($summary['pendapatan_cash'], 0, ',', '.') }}</p>
+            <h3 class="text-lg font-medium text-gray-900">Pendapatan Cash</h3>
+            <p class="mt-2 text-xl font-semibold text-green-600">Rp {{ number_format($summary['pendapatan_cash'], 0, ',', '.') }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-lg p-6">
-            <h3 class="text-lg font-medium text-gray-900">Pendapatan Digital Hari Ini</h3>
-            <p class="mt-2 text-xl font-semibold text-green-600">Rp
-                {{ number_format($summary['pendapatan_digital'], 0, ',', '.') }}</p>
+            <h3 class="text-lg font-medium text-gray-900">Pendapatan Digital</h3>
+            <p class="mt-2 text-xl font-semibold text-green-600">Rp {{ number_format($summary['pendapatan_digital'], 0, ',', '.') }}</p>
+        </div>
+        <div class="bg-white shadow-sm rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900">Total Kotor</h3>
+            <p class="mt-2 text-xl font-semibold text-blue-600">Rp {{ number_format($summary['gross_pendapatan'], 0, ',', '.') }}</p>
         </div>
     </div>
+    @endif
 
     @if (session('success'))
         <x-alert type="success" :message="session('success')" />
@@ -73,8 +112,7 @@
                             class="w-45 px-3 py-2 mt-1 text-gray-700 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150">
                             <option value="">Semua Meja</option>
                             @foreach ($mejas as $meja)
-                                <option value="{{ $meja->id }}"
-                                    {{ request('meja') == $meja->id ? 'selected' : '' }}>
+                                <option value="{{ $meja->id }}" {{ request('meja') == $meja->id ? 'selected' : '' }}>
                                     {{ $meja->nama }}
                                 </option>
                             @endforeach
@@ -109,46 +147,24 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                No
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Nomor Meja
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Nama
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Kode Order
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Tanggal
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Metode Pembayaran
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Aksi
-                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nomor Meja</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode Order</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metode Pembayaran</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($orders as $index => $order)
+                            @php
+                                $orderTotal = $order->subtotal + $order->tax;
+                                $refundAmount = $order->refunds_sum_refund_amount ?? 0;
+                                $netTotal = $orderTotal - $refundAmount;
+                            @endphp
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">
@@ -176,9 +192,22 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">
-                                        Rp {{ number_format($order->subtotal + $order->tax, 0, ',', '.') }}
+                                    <div class="text-sm text-gray-900 font-medium">
+                                        Rp {{ number_format($netTotal, 0, ',', '.') }}
                                     </div>
+                                    @if($refundAmount > 0)
+                                        <div class="text-xs text-red-500">
+                                            <span class="inline-flex items-center">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                                </svg>
+                                                Refund: Rp {{ number_format($refundAmount, 0, ',', '.') }}
+                                            </span>
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            Awal: Rp {{ number_format($orderTotal, 0, ',', '.') }}
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">
@@ -186,8 +215,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span
-                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusConfig[$order->status]['class'] }}">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusConfig[$order->status]['class'] }}">
                                         {{ $statusConfig[$order->status]['label'] }}
                                     </span>
                                 </td>
@@ -200,8 +228,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8"
-                                    class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                <td colspan="9" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     @if (request('search'))
                                         Tidak ditemukan pesanan dengan kode "{{ request('search') }}"
                                     @else

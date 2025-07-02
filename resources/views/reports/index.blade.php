@@ -57,11 +57,13 @@
                 {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-lg p-6">
-            <h3 class="text-lg font-medium text-gray-900">Total Pendapatan</h3>
+            <h3 class="text-lg font-medium text-gray-900">Total Pendapatan Bersih</h3>
             <p class="mt-2 text-3xl font-semibold text-green-600">Rp
-                {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}</p>
-            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} -
-                {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
+                {{ number_format($summary['total_pendapatan_bersih'], 0, ',', '.') }}</p>
+            <div class="mt-1 text-sm text-gray-500">
+                <p>Kotor: Rp {{ number_format($summary['total_pendapatan_kotor'], 0, ',', '.') }}</p>
+                <p class="text-red-500">Refund: Rp {{ number_format($summary['total_refund'], 0, ',', '.') }}</p>
+            </div>
         </div>
     </div>
 
@@ -72,30 +74,13 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                No
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Tanggal
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Jumlah Transaksi
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Cash
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Digital
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Pendapatan
-                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Transaksi</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Cash</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Digital</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Refund</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Pendapatan</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -120,14 +105,17 @@
                                         {{ number_format($report->total_digital, 0, ',', '.') }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <div class="text-sm text-red-500">- Rp
+                                        {{ number_format($report->total_refund, 0, ',', '.') }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <div class="text-sm text-gray-900">Rp
-                                        {{ number_format($report->total_pendapatan, 0, ',', '.') }}</div>
+                                        {{ number_format($report->total_pendapatan_bersih, 0, ',', '.') }}</div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4"
-                                    class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                <td colspan="7" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     Tidak ada data transaksi untuk periode yang dipilih
                                 </td>
                             </tr>
@@ -147,8 +135,11 @@
                             <th class="px-6 py-4 text-right text-sm font-medium text-gray-900">
                                 Rp {{ number_format($summary['total_digital'], 0, ',', '.') }}
                             </th>
+                            <th class="px-6 py-4 text-right text-sm font-medium text-red-500">
+                                - Rp {{ number_format($summary['total_refund'], 0, ',', '.') }}
+                            </th>
                             <th class="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                                Rp {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}
+                                Rp {{ number_format($summary['total_pendapatan_bersih'], 0, ',', '.') }}
                             </th>
                         </tr>
                     </tfoot>
@@ -170,6 +161,5 @@
             console.error('Error:', error);
         }
     }
-</script>
-
+    </script>
 </x-layouts.app>

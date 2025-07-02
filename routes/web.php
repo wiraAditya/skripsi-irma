@@ -13,6 +13,10 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CashierSessionController;
+use App\Http\Controllers\RefundController;
+
+
 
 Route::get('/', [HomeMenuController::class, 'index'])->name('home');
 Route::get('/cart', [App\Http\Controllers\CartController::class, 'index'])->name('cart.index');
@@ -54,11 +58,25 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
         Route::get('/order', [App\Http\Controllers\OrderController::class, 'index'])->name('order.index');
         Route::get('/order/{order}', [OrderController::class, 'detail'])->name('orders.detail');
         Route::get('/order/confirm/{order}', [OrderController::class, 'confirm'])->name('order.confirm');
+        Route::get('/order/process/{order}', [OrderController::class, 'process'])->name('order.process');
+        Route::get('/order/done/{order}', [OrderController::class, 'done'])->name('order.done');
         Route::get('/order/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
         Route::put('/order/{order}', [OrderController::class, 'update'])->name('orders.update');
         Route::delete('/order/{order}/details/{detail}', [OrderController::class, 'destroyDetail'])->name('orders.details.destroy');
+
+        Route::get('/admin/sessions/open', [CashierSessionController::class, 'open'])->name('admin.sessions.open');
+        Route::post('/admin/sessions/open', [CashierSessionController::class, 'storeOpen'])->name('admin.sessions.storeOpen');
+        Route::get('/admin/sessions/close/{session}', [CashierSessionController::class, 'close'])->name('admin.sessions.close');
+        Route::post('/admin/sessions/close/{session}', [CashierSessionController::class, 'storeClose'])->name('admin.sessions.storeClose');
+
+        Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');
+        Route::get('/refunds/create', [RefundController::class, 'create'])->name('refunds.create');
+        Route::post('/refunds', [RefundController::class, 'store'])->name('refunds.store');
+        Route::get('/refunds/{refund}', [RefundController::class, 'show'])->name('refunds.show');
+        
     });
 });
+
 
 
 require __DIR__ . '/auth.php';

@@ -16,6 +16,10 @@
         <x-alert type="success" :message="session('success')" />
     @endif
 
+    @if(session('error'))
+        <x-alert type="error" :message="session('error')" />
+    @endif
+
     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
         <div class="p-6 bg-white border-b border-gray-200">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -58,9 +62,13 @@
                             <span class="text-gray-500 w-40">Pajak</span>
                             <span class="font-medium">Rp {{ number_format($order->tax ?? 0, 0, ',', '.') }}</span>
                         </div>
+                        <div class="flex">
+                            <span class="text-gray-500 w-40">Total Refund</span>
+                            <span class="font-medium text-red-600">- Rp {{ number_format($order->refunds->sum('refund_amount') ?? 0, 0, ',', '.') }}</span>
+                        </div>
                         <div class="flex border-t border-gray-200 pt-2">
-                            <span class="text-gray-500 w-40 font-bold">Total</span>
-                            <span class="font-bold">Rp {{ number_format($order->subtotal + $order->tax, 0, ',', '.') }}</span>
+                            <span class="text-gray-500 w-40 font-bold">Total Bersih</span>
+                            <span class="font-bold">Rp {{ number_format(($order->subtotal + $order->tax) - $order->refunds->sum('refund_amount'), 0, ',', '.') }}</span>
                         </div>
                     </div>
                 </div>
@@ -79,7 +87,7 @@
     </div>
 
     <!-- Order Items -->
-    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
         <div class="p-6 bg-white border-b border-gray-200">
             <h2 class="text-lg font-medium text-gray-900 mb-4">Daftar Menu</h2>
             
@@ -87,28 +95,21 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                No
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Menu
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Harga
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Qty
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Subtotal
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Catatan
-                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Menu</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Refund</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catatan</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($order->orderDetails as $index => $item)
+                            @php
+                                $itemRefund = $item->refundItems->sum('refund_amount');
+                                $itemQtyRefund = $item->refundItems->sum('quantity');
+                            @endphp
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ $loop->iteration }}</div>
@@ -120,10 +121,26 @@
                                     <div class="text-sm text-gray-900">Rp {{ number_format($item->harga ?? 0, 0, ',', '.') }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $item->qty }}</div>
+                                    <div class="text-sm text-gray-900">
+                                        {{ $item->qty }}
+                                        @if($itemQtyRefund > 0)
+                                            <span class="text-xs text-red-500">(Refund: {{ $itemQtyRefund }})</span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">Rp {{ number_format($item->harga * $item->qty, 0, ',', '.') }}</div>
+                                    <div class="text-sm text-red-500">
+                                        @if($itemRefund > 0)
+                                            - Rp {{ number_format($itemRefund, 0, ',', '.') }}
+                                        @else
+                                            -
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        Rp {{ number_format(($item->harga * $item->qty) - $itemRefund, 0, ',', '.') }}
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="text-sm text-gray-900">{{ $item->catatan ?? '-' }}</div>
@@ -131,7 +148,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                <td colspan="7" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     Tidak ada item menu
                                 </td>
                             </tr>
@@ -142,6 +159,69 @@
         </div>
     </div>
 
+    <!-- Refund History -->
+    @if($order->refunds->count() > 0)
+    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+        <div class="p-6 bg-white border-b border-gray-200">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Riwayat Refund</h2>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metode</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alasan</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dibuat Oleh</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($order->refunds as $refund)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ $refund->created_at->format('d/m/Y H:i') }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-red-600">- Rp {{ number_format($refund->refund_amount, 0, ',', '.') }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        @if($refund->refund_method === \App\Models\Refund::METHOD_CASH)
+                                            Tunai
+                                        @else
+                                            Transfer
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        @if($refund->status === \App\Models\Refund::STATUS_APPROVED) bg-green-100 text-green-800
+                                        @elseif($refund->status === \App\Models\Refund::STATUS_PENDING) bg-yellow-100 text-yellow-800
+                                        @elseif($refund->status === \App\Models\Refund::STATUS_REJECTED) bg-red-100 text-red-800
+                                        @else bg-blue-100 text-blue-800 @endif">
+                                        @if($refund->status === \App\Models\Refund::STATUS_APPROVED) Disetujui
+                                        @elseif($refund->status === \App\Models\Refund::STATUS_PENDING) Pending
+                                        @elseif($refund->status === \App\Models\Refund::STATUS_REJECTED) Ditolak
+                                        @else Selesai @endif
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900">{{ $refund->reason ?? '-' }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ $refund->processedBy->name ?? '-' }}</div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Action Buttons -->
     <div class="mt-6 flex justify-end space-x-4">
         <a href="{{ route('receipt.print', ['transactionCode' => $order->transaction_code, 'mejaId' => $mejaId ?? null]) }}" target="_blank" class="inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
@@ -150,13 +230,17 @@
             </svg>
             Struk
         </a>
+
+        @if($order->status !== \App\Models\Order::STATUS_DONE)
         <a 
             href="{{ route('orders.edit', $order) }}" 
             class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
         >
             Edit Pesanan
         </a>
-        @if($order->status === \App\Models\Order::STATUS_WAITING_CASH)
+        @endif
+
+        @if($order->status === \App\Models\Order::STATUS_WAITING_CASH && auth()->user()->role !== 'role_admin')
             <button 
                 type="button" 
                 onclick="openPaymentModal()"
@@ -164,6 +248,26 @@
             >
                 Konfirmasi Pembayaran
             </button>
+        @endif
+
+        @if($order->status === \App\Models\Order::STATUS_PAID && auth()->user()->role === 'role_dapur')
+            <a 
+                type="button" 
+                href="{{ route('order.process', $order) }}"
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+                Proses Pesanan
+            </a>
+        @endif
+        
+        @if($order->status === \App\Models\Order::STATUS_PROCESS && auth()->user()->role === 'role_dapur')
+            <a 
+                type="button" 
+                href="{{ route('order.done', $order) }}"
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+                Selesaikan Pesanan
+            </a>
         @endif
     </div>
 
@@ -183,32 +287,42 @@
                             Konfirmasi Pembayaran
                         </h3>
                         <div class="space-y-4">
-                           <flux:input
-                                    name="nama"
-                                    id="nama"
-                                    label="Total yang harus dibayar"
-                                    type="text"
-                                    :value="'Rp ' . number_format(($order->subtotal ?? 0) + ($order->tax ?? 0), 0, ',', '.')"
+                           <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="totalAmount">
+                                    Total yang harus dibayar
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="totalAmount" 
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                                    value="Rp {{ number_format(($order->subtotal ?? 0) + ($order->tax ?? 0), 0, ',', '.') }}" 
+                                    readonly
+                                >
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="amountPaid">
+                                    Jumlah yang dibayarkan
+                                </label>
+                                <input 
+                                    type="number" 
+                                    id="amountPaid" 
+                                    name="amount_paid" 
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
                                     required
-                                    autofocus
-                                />
-                                <flux:input
-                                        type="number" 
-                                        label="Jumlah yang dibayarkan"
-                                        name="amount_paid" 
-                                        id="amountPaid" 
-                                        required
-                                        oninput="calculateChange()"
-                                />
-                                <flux:input
-                                        type="text" 
-                                        label="Kembalian"
-                                        name="amount_paid" 
-                                        id="changeAmount" 
-                                        readonly
-                                />
-                            
-                            <
+                                    oninput="calculateChange()"
+                                >
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2" for="changeAmount">
+                                    Kembalian
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="changeAmount" 
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                                    readonly
+                                >
+                            </div>
                         </div>
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">

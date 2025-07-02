@@ -23,6 +23,7 @@ class Order extends Model
         'catatan',
         'nama',
         'status',
+        'user_id',
     ];
 
     /**
@@ -78,5 +79,50 @@ class Order extends Model
             // If you have fixed tax rate (e.g., 10%)
             'tax' => $subtotal * 0.1,
         ]);
+    }
+    
+    public function getTotalRefundedAmount()
+    {
+        return $this->refunds()->sum('refund_amount');
+    }
+
+    // Get net order amount (original - refunded)
+    public function getNetAmount()
+    {
+        return $this->total_amount - $this->getTotalRefundedAmount();
+    }
+
+    // Check if order has any refunds
+    public function hasRefunds()
+    {
+        return $this->refunds()->exists();
+    }
+
+    // Get order details with net quantities
+    public function getOrderDetailsWithNetQuantities()
+    {
+        return $this->orderDetails->map(function ($detail) {
+            return [
+                'id' => $detail->id,
+                'product_name' => $detail->menu->nama,
+                'original_qty' => $detail->qty,
+                'refunded_qty' => $detail->getTotalRefundedQuantity(),
+                'net_qty' => $detail->getNetQuantity(),
+                'original_amount' => $detail->qty * $detail->harga,
+                'refunded_amount' => $detail->getTotalRefundedAmount(),
+                'net_amount' => $detail->getNetAmount(),
+                'unit_price' => $detail->harga,
+            ];
+        });
+    }
+
+    public function refunds()
+    {
+        return $this->hasMany(Refund::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
     }
 }

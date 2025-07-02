@@ -60,8 +60,9 @@ class User extends Authenticatable
     public function getRoleName(): string
     {
         $roles = [
-            'role_kasir' => 'Kasir',
             'role_admin' => 'Admin',
+            'role_kasir' => 'Kasir',
+            'role_dapur' => 'Dapur',
         ];
 
         return $roles[$this->role] ?? 'Unknown';

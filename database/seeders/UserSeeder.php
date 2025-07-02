@@ -30,6 +30,14 @@ class UserSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'name' => ' Dapur User',
+                'email' => 'dapur@example.com',
+                'password' => Hash::make('password'),
+                'role' => 'role_dapur',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
     }
 }

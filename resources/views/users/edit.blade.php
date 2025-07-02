@@ -53,7 +53,17 @@
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
-
+                <div class="mb-4">
+                    <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <select name="role" id="role" class="menu-select border border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm px-3 py-2" required>
+                        <option value="">Pilih Role</option>
+                        <option value="role_kasir" {{ old('role', $user->role) == 'role_kasir' ? 'selected' : '' }}>Kasir</option>
+                        <option value="role_dapur" {{ old('role', $user->role) == 'role_dapur' ? 'selected' : '' }}>Dapur</option>
+                    </select>
+                    @error('role')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
                 <div class="flex justify-end gap-1">
                     <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         Simpan

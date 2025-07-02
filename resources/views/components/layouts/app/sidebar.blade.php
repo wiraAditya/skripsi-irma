@@ -6,14 +6,14 @@
     <body class="min-h-screen bg-gray-100 dark:bg-zinc-800">
     @php
         $sidebarMenu = [
-            ['name' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard', 'show' => ['role_kasir', 'role_admin']],
+            ['name' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard', 'show' => ['role_kasir', 'role_admin', 'role_dapur']],
             ['name' => 'User', 'icon' => 'user', 'route' => 'users.index', 'show' => ['role_admin']],
             ['name' => 'Meja', 'icon' => 'grid-3x3', 'route' => 'meja.index', 'show' => ['role_admin']],
             ['name' => 'Kategori Menu', 'icon' => 'circle-small', 'route' => 'kategori.index', 'show' => ['role_admin']],
             ['name' => 'Menu', 'icon' => 'utensils', 'route' => 'menu.index', 'show' => ['role_admin']],
-            ['name' => 'Order', 'icon' => 'banknote-arrow-up', 'route' => 'order.index', 'show' => ['role_kasir', 'role_admin']],
+            ['name' => 'Order', 'icon' => 'banknote-arrow-up', 'route' => 'order.index', 'show' => ['role_kasir', 'role_admin', 'role_dapur']],
+            ['name' => 'Refund', 'icon' => 'banknote-arrow-up', 'route' => 'refunds.index', 'show' => ['role_kasir', 'role_admin']],
             ['name' => 'Laporan', 'icon' => 'banknote-arrow-up', 'route' => 'reports.index', 'show' => ['role_admin']],
-            ['name' => 'Laporan Harian', 'icon' => 'banknote-arrow-up', 'route' => 'reports.index.daily', 'show' => ['role_admin']],
         ];
 
         $userRole = auth()->user()->role;

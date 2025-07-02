@@ -28,35 +28,48 @@
                     <p class="text-gray-500 text-sm">Dicetak pada: {{ $printDate }}</p>
                 </div>
 
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 print:grid-cols-2">
+                    <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Total Transaksi</h3>
+                        <p class="mt-1 text-2xl font-semibold text-blue-600">{{ $summary['total_transaksi'] }}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Total Pendapatan Bersih</h3>
+                        <p class="mt-1 text-2xl font-semibold text-green-600">
+                            Rp {{ number_format($summary['total_pendapatan_bersih'], 0, ',', '.') }}
+                        </p>
+                        <div class="text-sm text-gray-500 mt-1">
+                            <span class="block">Kotor: Rp {{ number_format($summary['total_pendapatan_kotor'], 0, ',', '.') }}</span>
+                            <span class="block text-red-500">Refund: Rp {{ number_format($summary['total_refund'], 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Total Tunai</h3>
+                        <p class="mt-1 text-xl font-semibold text-green-600">
+                            Rp {{ number_format($summary['total_cash'], 0, ',', '.') }}
+                        </p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Total Digital</h3>
+                        <p class="mt-1 text-xl font-semibold text-green-600">
+                            Rp {{ number_format($summary['total_digital'], 0, ',', '.') }}
+                        </p>
+                    </div>
+                </div>
+
                 <!-- Report Table -->
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th scope="col"
-                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    No
-                                </th>
-                                <th scope="col"
-                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Tanggal
-                                </th>
-                                <th scope="col"
-                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Jumlah Transaksi
-                                </th>
-                                <th scope="col"
-                                    class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total Cash
-                                </th>
-                                <th scope="col"
-                                    class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total Digital
-                                </th>
-                                <th scope="col"
-                                    class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total Pendapatan
-                                </th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Transaksi</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Cash</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Digital</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Refund</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Pendapatan</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -77,14 +90,16 @@
                                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
                                         Rp {{ number_format($report->total_digital, 0, ',', '.') }}
                                     </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-red-500 text-right">
+                                        - Rp {{ number_format($report->total_refund, 0, ',', '.') }}
+                                    </td>
                                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
-                                        Rp {{ number_format($report->total_pendapatan, 0, ',', '.') }}
+                                        Rp {{ number_format($report->total_pendapatan_bersih, 0, ',', '.') }}
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4"
-                                        class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                    <td colspan="7" class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                         Tidak ada data transaksi untuk periode yang dipilih
                                     </td>
                                 </tr>
@@ -104,8 +119,11 @@
                                 <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">
                                     Rp {{ number_format($summary['total_digital'], 0, ',', '.') }}
                                 </th>
+                                <th class="px-4 py-3 text-right text-sm font-medium text-red-500">
+                                    - Rp {{ number_format($summary['total_refund'], 0, ',', '.') }}
+                                </th>
                                 <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">
-                                    Rp {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}
+                                    Rp {{ number_format($summary['total_pendapatan_bersih'], 0, ',', '.') }}
                                 </th>
                             </tr>
                         </tfoot>
@@ -181,6 +199,10 @@
             tfoot {
                 font-weight: bold;
                 background-color: #f1f5f9;
+            }
+
+            .bg-gray-50 {
+                background-color: #f9fafb !important;
             }
         }
     </style>

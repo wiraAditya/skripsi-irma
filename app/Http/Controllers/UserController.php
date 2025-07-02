@@ -35,13 +35,14 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8'],
+            'role' => ['required', 'string', 'in:role_kasir,role_dapur'], 
         ]);
 
         User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => "role_kasir",
+            'role' => $validated['role'],
         ]);
 
         return redirect()->route('users.index')
@@ -63,12 +64,14 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)]
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'role' => ['required', 'string', 'in:role_kasir,role_dapur'], 
         ]);
 
         $data = [
             'name' => $validated['name'],
-            'email' => $validated['email']
+            'email' => $validated['email'],
+            'role' => $validated['role'],
         ];
 
         // Only update password if it's provided

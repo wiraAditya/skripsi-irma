@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+
 
 class ReportController extends Controller
 {
@@ -21,19 +23,28 @@ class ReportController extends Controller
             'end_date' => 'sometimes|date|after_or_equal:start_date',
         ]);
 
-        // Query paid orders within date range
-        $reports = Order::where('status', Order::STATUS_PAID)
+        // First get the refund sums per order
+        $refundSums = DB::table('refunds')
+            ->select('order_id', DB::raw('SUM(refund_amount) as total_refund'))
+            ->groupBy('order_id');
+
+        // Then join with orders and calculate the reports
+        $reports = DB::table('orders')
+            ->leftJoinSub($refundSums, 'refund_totals', function ($join) {
+                $join->on('orders.id', '=', 'refund_totals.order_id');
+            })
+            ->select(
+                DB::raw('DATE(tanggal) as tanggal_transaksi'),
+                DB::raw('COUNT(*) as jumlah_transaksi'),
+                DB::raw('SUM(subtotal + tax) as total_pendapatan_kotor'),
+                DB::raw('SUM((subtotal + tax) - IFNULL(refund_totals.total_refund, 0)) as total_pendapatan_bersih'),
+                DB::raw('SUM(CASE WHEN payment_method = "'.Order::PAYMENT_CASH.'" THEN (subtotal + tax) - IFNULL(refund_totals.total_refund, 0) ELSE 0 END) as total_cash'),
+                DB::raw('SUM(CASE WHEN payment_method = "'.Order::PAYMENT_DIGITAL.'" THEN (subtotal + tax) - IFNULL(refund_totals.total_refund, 0) ELSE 0 END) as total_digital'),
+                DB::raw('SUM(IFNULL(refund_totals.total_refund, 0)) as total_refund')
+            )
+            ->where('status', Order::STATUS_PAID)
             ->whereDate('tanggal', '>=', $startDate)
             ->whereDate('tanggal', '<=', $endDate)
-            ->selectRaw(
-                '
-                DATE(tanggal) as tanggal_transaksi,
-                COUNT(*) as jumlah_transaksi,
-                SUM(subtotal + tax) as total_pendapatan,
-                SUM(CASE WHEN payment_method = "method_cash" THEN subtotal + tax ELSE 0 END) as total_cash,
-                SUM(CASE WHEN payment_method = "method_digital" THEN subtotal + tax ELSE 0 END) as total_digital
-                '
-            )
             ->groupBy('tanggal_transaksi')
             ->orderBy('tanggal_transaksi', 'desc')
             ->get();
@@ -41,40 +52,55 @@ class ReportController extends Controller
         // Calculate summary
         $summary = [
             'total_transaksi' => $reports->sum('jumlah_transaksi'),
-            'total_pendapatan' => $reports->sum('total_pendapatan'),
+            'total_pendapatan_kotor' => $reports->sum('total_pendapatan_kotor'),
+            'total_pendapatan_bersih' => $reports->sum('total_pendapatan_bersih'),
             'total_cash' => $reports->sum('total_cash'),
             'total_digital' => $reports->sum('total_digital'),
+            'total_refund' => $reports->sum('total_refund'),
         ];
 
         return view('reports.index', compact('reports', 'summary', 'startDate', 'endDate', 'today'));
     }
+
 
     public function print(Request $request)
     {
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        $reports = Order::where('status', Order::STATUS_PAID)
+        // First get the refund sums per order
+        $refundSums = DB::table('refunds')
+            ->select('order_id', DB::raw('SUM(refund_amount) as total_refund'))
+            ->groupBy('order_id');
+
+        // Then join with orders and calculate the reports
+        $reports = DB::table('orders')
+            ->leftJoinSub($refundSums, 'refund_totals', function ($join) {
+                $join->on('orders.id', '=', 'refund_totals.order_id');
+            })
+            ->select(
+                DB::raw('DATE(tanggal) as tanggal_transaksi'),
+                DB::raw('COUNT(*) as jumlah_transaksi'),
+                DB::raw('SUM(subtotal + tax) as total_pendapatan_kotor'),
+                DB::raw('SUM((subtotal + tax) - IFNULL(refund_totals.total_refund, 0)) as total_pendapatan_bersih'),
+                DB::raw('SUM(CASE WHEN payment_method = "'.Order::PAYMENT_CASH.'" THEN (subtotal + tax) - IFNULL(refund_totals.total_refund, 0) ELSE 0 END) as total_cash'),
+                DB::raw('SUM(CASE WHEN payment_method = "'.Order::PAYMENT_DIGITAL.'" THEN (subtotal + tax) - IFNULL(refund_totals.total_refund, 0) ELSE 0 END) as total_digital'),
+                DB::raw('SUM(IFNULL(refund_totals.total_refund, 0)) as total_refund')
+            )
+            ->where('status', Order::STATUS_PAID)
             ->whereDate('tanggal', '>=', $startDate)
             ->whereDate('tanggal', '<=', $endDate)
-            ->selectRaw(
-                '
-                DATE(tanggal) as tanggal_transaksi,
-                COUNT(*) as jumlah_transaksi,
-                SUM(subtotal + tax) as total_pendapatan,
-                SUM(CASE WHEN payment_method = "method_cash" THEN subtotal + tax ELSE 0 END) as total_cash,
-                SUM(CASE WHEN payment_method = "method_digital" THEN subtotal + tax ELSE 0 END) as total_digital
-                '
-            )
             ->groupBy('tanggal_transaksi')
             ->orderBy('tanggal_transaksi', 'desc')
             ->get();
 
         $summary = [
             'total_transaksi' => $reports->sum('jumlah_transaksi'),
-            'total_pendapatan' => $reports->sum('total_pendapatan'),
+            'total_pendapatan_kotor' => $reports->sum('total_pendapatan_kotor'),
+            'total_pendapatan_bersih' => $reports->sum('total_pendapatan_bersih'),
             'total_cash' => $reports->sum('total_cash'),
             'total_digital' => $reports->sum('total_digital'),
+            'total_refund' => $reports->sum('total_refund'),
         ];
 
         $printDate = now()->format('d/m/Y H:i');
@@ -92,28 +118,40 @@ class ReportController extends Controller
             'date' => 'sometimes|date',
         ]);
 
-        $reports = Order::where('status', Order::STATUS_PAID)
+        $reports = Order::withSum('refunds', 'refund_amount')
+            ->where('status', Order::STATUS_PAID)
             ->whereDate('tanggal', $date)
             ->get();
 
-        $totalPendapatan = 0;
+        $totalPendapatanKotor = 0;
+        $totalPendapatanBersih = 0;
         $totalCash = 0;
         $totalDigital = 0;
+        $totalRefund = 0;
 
         foreach ($reports as $report) {
-            $totalPendapatan += $report->subtotal + $report->tax;
+            $refundAmount = $report->refunds_sum_refund_amount ?? 0;
+            $orderTotal = $report->subtotal + $report->tax;
+            $netAmount = $orderTotal - $refundAmount;
+
+            $totalPendapatanKotor += $orderTotal;
+            $totalPendapatanBersih += $netAmount;
+            $totalRefund += $refundAmount;
+
             if ($report->payment_method === 'method_cash') {
-                $totalCash += $report->subtotal + $report->tax;
+                $totalCash += $netAmount;
             } elseif ($report->payment_method === 'method_digital') {
-                $totalDigital += $report->subtotal + $report->tax;
+                $totalDigital += $netAmount;
             }
         }
 
         $summary = [
             'total_penjualan' => $reports->count(),
-            'total_pendapatan' => $totalPendapatan,
+            'total_pendapatan_kotor' => $totalPendapatanKotor,
+            'total_pendapatan_bersih' => $totalPendapatanBersih,
             'total_cash' => $totalCash,
             'total_digital' => $totalDigital,
+            'total_refund' => $totalRefund,
         ];
 
         $paymentMethodLabels = [
@@ -133,28 +171,40 @@ class ReportController extends Controller
             'date' => 'sometimes|date',
         ]);
 
-        $reports = Order::where('status', Order::STATUS_PAID)
+        $reports = Order::withSum('refunds', 'refund_amount')
+            ->where('status', Order::STATUS_PAID)
             ->whereDate('tanggal', $date)
             ->get();
 
-        $totalPendapatan = 0;
+        $totalPendapatanKotor = 0;
+        $totalPendapatanBersih = 0;
         $totalCash = 0;
         $totalDigital = 0;
+        $totalRefund = 0;
 
         foreach ($reports as $report) {
-            $totalPendapatan += $report->subtotal + $report->tax;
+            $refundAmount = $report->refunds_sum_refund_amount ?? 0;
+            $orderTotal = $report->subtotal + $report->tax;
+            $netAmount = $orderTotal - $refundAmount;
+
+            $totalPendapatanKotor += $orderTotal;
+            $totalPendapatanBersih += $netAmount;
+            $totalRefund += $refundAmount;
+
             if ($report->payment_method === 'method_cash') {
-                $totalCash += $report->subtotal + $report->tax;
+                $totalCash += $netAmount;
             } elseif ($report->payment_method === 'method_digital') {
-                $totalDigital += $report->subtotal + $report->tax;
+                $totalDigital += $netAmount;
             }
         }
 
         $summary = [
             'total_penjualan' => $reports->count(),
-            'total_pendapatan' => $totalPendapatan,
+            'total_pendapatan_kotor' => $totalPendapatanKotor,
+            'total_pendapatan_bersih' => $totalPendapatanBersih,
             'total_cash' => $totalCash,
             'total_digital' => $totalDigital,
+            'total_refund' => $totalRefund,
         ];
 
         $paymentMethodLabels = [
