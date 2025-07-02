@@ -67,7 +67,11 @@ class OrderController extends Controller
 
         // Get today's paid orders with refund sum
         $todayOrders = Order::withSum('refunds', 'refund_amount')
-            ->where('status', Order::STATUS_PAID)
+            ->whereIn('status', [
+                Order::STATUS_PAID,
+                Order::STATUS_PROCESS,
+                Order::STATUS_DONE
+            ])
             ->whereDate('tanggal', now()->format('Y-m-d'))
             ->get();
 

@@ -17,51 +17,98 @@ class DashboardController extends Controller
         $startDate = now()->year($year)->month($month)->startOfMonth();
         $endDate = now()->year($year)->month($month)->endOfMonth();
 
-        // Monthly Income
+        // Monthly Income (net after refunds)
         $monthlyIncome = Order::whereBetween('tanggal', [$startDate, $endDate])
-            ->sum('subtotal');
+            ->withSum('refunds', 'refund_amount')
+            ->get()
+            ->sum(function($order) {
+                return ($order->subtotal+$order->tax) - $order->refunds_sum_refund_amount;
+            });
 
-        // Total Orders
-        $totalOrders = Order::whereBetween('tanggal', [$startDate, $endDate])->count();
+        // Total Orders (excluding canceled orders)
+        $totalOrders = Order::whereBetween('tanggal', [$startDate, $endDate])
+            ->whereIn('status',  [
+                Order::STATUS_PAID,
+                Order::STATUS_PROCESS,
+                Order::STATUS_DONE
+            ])
+            ->count();
 
-        // Daily Income
-        $dailyIncome = Order::whereBetween('tanggal', [$startDate, $endDate])
-            ->selectRaw('DATE(tanggal) as date, SUM(subtotal) as total')
+        // Daily Income (net after refunds)
+        $dailyIncome = DB::table('orders')
+            ->leftJoin('refunds', function($join) {
+                $join->on('orders.id', '=', 'refunds.order_id');
+            })
+            ->whereBetween('orders.tanggal', [$startDate, $endDate])
+            ->select(
+                DB::raw('DATE(orders.tanggal) as date'),
+                DB::raw('SUM(orders.subtotal + orders.tax) as gross_total'),
+                DB::raw('COALESCE(SUM(refunds.refund_amount), 0) as total_refunds')
+            )
             ->groupBy('date')
             ->orderBy('date')
             ->get()
+            ->map(function($item) {
+                return [
+                    'date' => $item->date,
+                    'total' => $item->gross_total - $item->total_refunds
+                ];
+            })
             ->toArray();
 
-        // Best Selling Menus
+        // Best Selling Menus (net after refunds)
         $bestSellingMenus = DB::table('order_details')
             ->join('orders', 'order_details.order_id', '=', 'orders.id')
             ->join('menu', 'order_details.menu_id', '=', 'menu.id')
+            ->leftJoin('refund_items', function($join) {
+                $join->on('order_details.id', '=', 'refund_items.order_detail_id')
+                     ->join('refunds', 'refund_items.refund_id', '=', 'refunds.id')
+                     ->where('refunds.status', '!=', 'rejected');
+            })
             ->whereBetween('orders.tanggal', [$startDate, $endDate])
-            ->select('menu.nama as name', DB::raw('SUM(order_details.qty) as qty'))
+            ->whereIn('orders.status', [ 
+                Order::STATUS_PAID,
+                Order::STATUS_PROCESS,
+                Order::STATUS_DONE
+            ])
+            ->select(
+                'menu.nama as name',
+                DB::raw('SUM(order_details.qty) as gross_qty'),
+                DB::raw('COALESCE(SUM(refund_items.quantity), 0) as refunded_qty'),
+                DB::raw('(SUM(order_details.qty) - COALESCE(SUM(refund_items.quantity), 0)) as net_qty')
+            )
             ->groupBy('menu.id')
-            ->orderByDesc('qty')
+            ->orderByDesc('net_qty')
             ->limit(5)
             ->get()
             ->toArray();
 
-        // Table Usage
+        // Table Usage (excluding canceled orders)
         $tableUsage = Order::whereBetween('tanggal', [$startDate, $endDate])
             ->join('meja', 'orders.meja_id', '=', 'meja.id')
+            ->whereIn('orders.status',  [
+                Order::STATUS_PAID,
+                Order::STATUS_PROCESS,
+                Order::STATUS_DONE
+            ])
             ->select('meja.nama as meja', DB::raw('COUNT(*) as count'))
             ->groupBy('meja.id')
             ->orderByDesc('count')
             ->get()
             ->toArray();
 
-        // Most Occupied Table
+        // Most Occupied Table (excluding canceled orders)
         $mostOccupiedTable = Order::whereBetween('tanggal', [$startDate, $endDate])
             ->join('meja', 'orders.meja_id', '=', 'meja.id')
+            ->whereIn('orders.status',  [
+                Order::STATUS_PAID,
+                Order::STATUS_PROCESS,
+                Order::STATUS_DONE
+            ])
             ->select('meja.nama')
             ->groupBy('meja.id')
             ->orderByDesc(DB::raw('COUNT(*)'))
             ->first();
-
-        
 
         return view('dashboard', compact(
             'monthlyIncome',
