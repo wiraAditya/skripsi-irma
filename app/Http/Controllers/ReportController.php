@@ -42,7 +42,11 @@ class ReportController extends Controller
                 DB::raw('SUM(CASE WHEN payment_method = "'.Order::PAYMENT_DIGITAL.'" THEN (subtotal + tax) - IFNULL(refund_totals.total_refund, 0) ELSE 0 END) as total_digital'),
                 DB::raw('SUM(IFNULL(refund_totals.total_refund, 0)) as total_refund')
             )
-            ->where('status', Order::STATUS_PAID)
+            ->whereIn('status',  [
+                Order::STATUS_PAID,
+                Order::STATUS_PROCESS,
+                Order::STATUS_DONE
+            ])
             ->whereDate('tanggal', '>=', $startDate)
             ->whereDate('tanggal', '<=', $endDate)
             ->groupBy('tanggal_transaksi')
@@ -87,7 +91,11 @@ class ReportController extends Controller
                 DB::raw('SUM(CASE WHEN payment_method = "'.Order::PAYMENT_DIGITAL.'" THEN (subtotal + tax) - IFNULL(refund_totals.total_refund, 0) ELSE 0 END) as total_digital'),
                 DB::raw('SUM(IFNULL(refund_totals.total_refund, 0)) as total_refund')
             )
-            ->where('status', Order::STATUS_PAID)
+            ->whereIn('status',  [
+                Order::STATUS_PAID,
+                Order::STATUS_PROCESS,
+                Order::STATUS_DONE
+            ])
             ->whereDate('tanggal', '>=', $startDate)
             ->whereDate('tanggal', '<=', $endDate)
             ->groupBy('tanggal_transaksi')
@@ -119,7 +127,11 @@ class ReportController extends Controller
         ]);
 
         $reports = Order::withSum('refunds', 'refund_amount')
-            ->where('status', Order::STATUS_PAID)
+            ->whereIn('status',  [
+                Order::STATUS_PAID,
+                Order::STATUS_PROCESS,
+                Order::STATUS_DONE
+            ])
             ->whereDate('tanggal', $date)
             ->get();
 
@@ -172,7 +184,11 @@ class ReportController extends Controller
         ]);
 
         $reports = Order::withSum('refunds', 'refund_amount')
-            ->where('status', Order::STATUS_PAID)
+            ->whereIn('status',  [
+                Order::STATUS_PAID,
+                Order::STATUS_PROCESS,
+                Order::STATUS_DONE
+            ])
             ->whereDate('tanggal', $date)
             ->get();
 

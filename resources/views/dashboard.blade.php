@@ -181,8 +181,8 @@
                 data: {
                     labels: @json(array_column($bestSellingMenus ?? [], 'name')),
                     datasets: [{
-                        label: 'Terjual',
-                        data: @json(array_column($bestSellingMenus ?? [], 'qty')),
+                        label: 'Terjual (Net)',
+                        data: @json(array_column($bestSellingMenus ?? [], 'net_qty')),
                         backgroundColor: '#10B981',
                         borderRadius: 6,
                         borderSkipped: false,

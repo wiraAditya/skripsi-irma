@@ -60,13 +60,12 @@ class DashboardController extends Controller
         $bestSellingMenus = DB::table('order_details')
             ->join('orders', 'order_details.order_id', '=', 'orders.id')
             ->join('menu', 'order_details.menu_id', '=', 'menu.id')
-            ->leftJoin('refund_items', function($join) {
-                $join->on('order_details.id', '=', 'refund_items.order_detail_id')
-                     ->join('refunds', 'refund_items.refund_id', '=', 'refunds.id')
-                     ->where('refunds.status', '!=', 'rejected');
+            ->leftJoin('refund_items', 'order_details.id', '=', 'refund_items.order_detail_id')
+            ->leftJoin('refunds', function($join) {
+                $join->on('refund_items.refund_id', '=', 'refunds.id');
             })
             ->whereBetween('orders.tanggal', [$startDate, $endDate])
-            ->whereIn('orders.status', [ 
+            ->whereIn('orders.status', [
                 Order::STATUS_PAID,
                 Order::STATUS_PROCESS,
                 Order::STATUS_DONE
@@ -75,13 +74,17 @@ class DashboardController extends Controller
                 'menu.nama as name',
                 DB::raw('SUM(order_details.qty) as gross_qty'),
                 DB::raw('COALESCE(SUM(refund_items.quantity), 0) as refunded_qty'),
-                DB::raw('(SUM(order_details.qty) - COALESCE(SUM(refund_items.quantity), 0)) as net_qty')
+                DB::raw('(SUM(order_details.qty) - COALESCE(SUM(refund_items.quantity), 0)) as net_qty'),
+                DB::raw('SUM(order_details.qty * order_details.harga) as gross_amount'),
+                DB::raw('COALESCE(SUM(refund_items.refund_amount), 0) as refunded_amount'),
+                DB::raw('(SUM(order_details.qty * order_details.harga) - COALESCE(SUM(refund_items.refund_amount), 0)) as net_amount')
             )
-            ->groupBy('menu.id')
+            ->groupBy('menu.id', 'menu.nama')
             ->orderByDesc('net_qty')
             ->limit(5)
             ->get()
             ->toArray();
+
 
         // Table Usage (excluding canceled orders)
         $tableUsage = Order::whereBetween('tanggal', [$startDate, $endDate])
