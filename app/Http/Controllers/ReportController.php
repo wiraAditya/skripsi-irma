@@ -126,8 +126,22 @@ class ReportController extends Controller
             'date' => 'sometimes|date',
         ]);
 
-        $reports = Order::withSum('refunds', 'refund_amount')
-            ->whereIn('status',  [
+        // First get the refund sums per order
+        $refundSums = DB::table('refunds')
+            ->select('order_id', DB::raw('SUM(refund_amount) as total_refund'))
+            ->whereDate('created_at', $date)
+            ->groupBy('order_id');
+
+        // Get orders with their refund totals
+        $reports = DB::table('orders')
+            ->leftJoinSub($refundSums, 'refund_totals', function ($join) {
+                $join->on('orders.id', '=', 'refund_totals.order_id');
+            })
+            ->select(
+                'orders.*',
+                DB::raw('IFNULL(refund_totals.total_refund, 0) as total_refund')
+            )
+            ->whereIn('status', [
                 Order::STATUS_PAID,
                 Order::STATUS_PROCESS,
                 Order::STATUS_DONE
@@ -142,7 +156,7 @@ class ReportController extends Controller
         $totalRefund = 0;
 
         foreach ($reports as $report) {
-            $refundAmount = $report->refunds_sum_refund_amount ?? 0;
+            $refundAmount = $report->total_refund ?? 0;
             $orderTotal = $report->subtotal + $report->tax;
             $netAmount = $orderTotal - $refundAmount;
 
@@ -150,9 +164,9 @@ class ReportController extends Controller
             $totalPendapatanBersih += $netAmount;
             $totalRefund += $refundAmount;
 
-            if ($report->payment_method === 'method_cash') {
+            if ($report->payment_method === Order::PAYMENT_CASH) {
                 $totalCash += $netAmount;
-            } elseif ($report->payment_method === 'method_digital') {
+            } elseif ($report->payment_method === Order::PAYMENT_DIGITAL) {
                 $totalDigital += $netAmount;
             }
         }
@@ -170,8 +184,8 @@ class ReportController extends Controller
             Order::PAYMENT_CASH => 'Tunai',
             Order::PAYMENT_DIGITAL => 'Digital'
         ];
-
-        return view('reports-daily.index', compact('reports', 'summary', 'date', 'paymentMethodLabels'));
+        $orderModel = Order::class;
+        return view('reports-daily.index', compact('reports', 'summary', 'date', 'paymentMethodLabels', 'orderModel'));
     }
 
     public function print_daily(Request $request)
@@ -183,8 +197,22 @@ class ReportController extends Controller
             'date' => 'sometimes|date',
         ]);
 
-        $reports = Order::withSum('refunds', 'refund_amount')
-            ->whereIn('status',  [
+        // First get the refund sums per order
+        $refundSums = DB::table('refunds')
+            ->select('order_id', DB::raw('SUM(refund_amount) as total_refund'))
+            ->whereDate('created_at', $date)
+            ->groupBy('order_id');
+
+        // Get orders with their refund totals
+        $reports = DB::table('orders')
+            ->leftJoinSub($refundSums, 'refund_totals', function ($join) {
+                $join->on('orders.id', '=', 'refund_totals.order_id');
+            })
+            ->select(
+                'orders.*',
+                DB::raw('IFNULL(refund_totals.total_refund, 0) as total_refund')
+            )
+            ->whereIn('status', [
                 Order::STATUS_PAID,
                 Order::STATUS_PROCESS,
                 Order::STATUS_DONE
@@ -199,7 +227,7 @@ class ReportController extends Controller
         $totalRefund = 0;
 
         foreach ($reports as $report) {
-            $refundAmount = $report->refunds_sum_refund_amount ?? 0;
+            $refundAmount = $report->total_refund ?? 0;
             $orderTotal = $report->subtotal + $report->tax;
             $netAmount = $orderTotal - $refundAmount;
 
@@ -207,9 +235,9 @@ class ReportController extends Controller
             $totalPendapatanBersih += $netAmount;
             $totalRefund += $refundAmount;
 
-            if ($report->payment_method === 'method_cash') {
+            if ($report->payment_method === Order::PAYMENT_CASH) {
                 $totalCash += $netAmount;
-            } elseif ($report->payment_method === 'method_digital') {
+            } elseif ($report->payment_method === Order::PAYMENT_DIGITAL) {
                 $totalDigital += $netAmount;
             }
         }

@@ -30,29 +30,41 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
         <div class="bg-white shadow-sm rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900">Total Penjualan</h3>
             <p class="mt-2 text-3xl font-semibold text-blue-600">{{ $summary['total_penjualan'] }}</p>
             <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900">Pendapatan Kotor</h3>
+            <p class="mt-2 text-3xl font-semibold text-purple-600">Rp
+                {{ number_format($summary['total_pendapatan_kotor'], 0, ',', '.') }}</p>
+            <p class="mt-1 text-sm text-gray-500">Sebelum refund</p>
+        </div>
+        <div class="bg-white shadow-sm rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900">Pendapatan Bersih</h3>
+            <p class="mt-2 text-3xl font-semibold text-green-600">Rp
+                {{ number_format($summary['total_pendapatan_bersih'], 0, ',', '.') }}</p>
+            <p class="mt-1 text-sm text-gray-500">Setelah refund</p>
+        </div>
+        <div class="bg-white shadow-sm rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900">Total Tunai</h3>
             <p class="mt-2 text-3xl font-semibold text-green-600">Rp
                 {{ number_format($summary['total_cash'], 0, ',', '.') }}</p>
-            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
+            <p class="mt-1 text-sm text-gray-500">{{ $paymentMethodLabels[$orderModel::PAYMENT_CASH] }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900">Total Digital</h3>
             <p class="mt-2 text-3xl font-semibold text-green-600">Rp
                 {{ number_format($summary['total_digital'], 0, ',', '.') }}</p>
-            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
+            <p class="mt-1 text-sm text-gray-500">{{ $paymentMethodLabels[$orderModel::PAYMENT_DIGITAL] }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-lg p-6">
-            <h3 class="text-lg font-medium text-gray-900">Total Pendapatan</h3>
-            <p class="mt-2 text-3xl font-semibold text-green-600">Rp
-                {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}</p>
-            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
+            <h3 class="text-lg font-medium text-gray-900">Total Refund</h3>
+            <p class="mt-2 text-3xl font-semibold text-red-600">Rp
+                {{ number_format($summary['total_refund'], 0, ',', '.') }}</p>
+            <p class="mt-1 text-sm text-gray-500">Pengembalian dana</p>
         </div>
     </div>
 
@@ -63,46 +75,60 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 No
                             </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Kode Order
                             </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Jenis Bayar
                             </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Total Kotor
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Refund
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Total Bersih
                             </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse($reports as $index => $report)
+                        @forelse($reports as $report)
+                            @php
+                                $grossTotal = $report->subtotal + $report->tax;
+                                $netTotal = $grossTotal - ($report->total_refund ?? 0);
+                            @endphp
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ $loop->iteration }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $report['transaction_code'] }}</div>
+                                    <div class="text-sm text-gray-900">{{ $report->transaction_code }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="text-sm text-gray-900">
-                                        {{ $paymentMethodLabels[$report->payment_method] }}</div>
+                                        {{ $paymentMethodLabels[$report->payment_method] }}
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <div class="text-sm text-gray-900">Rp
-                                        {{ number_format(($report['subtotal'] + $report['tax']), 0, ',', '.') }}</div>
+                                        {{ number_format($grossTotal, 0, ',', '.') }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <div class="text-sm text-red-600">Rp
+                                        {{ number_format($report->total_refund ?? 0, 0, ',', '.') }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <div class="text-sm text-green-600">Rp
+                                        {{ number_format($netTotal, 0, ',', '.') }}</div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4"
-                                    class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     Tidak ada data transaksi untuk periode yang dipilih
                                 </td>
                             </tr>
@@ -114,7 +140,13 @@
                                 TOTAL
                             </th>
                             <th class="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                                Rp {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}
+                                Rp {{ number_format($summary['total_pendapatan_kotor'], 0, ',', '.') }}
+                            </th>
+                            <th class="px-6 py-4 text-right text-sm font-medium text-red-600">
+                                Rp {{ number_format($summary['total_refund'], 0, ',', '.') }}
+                            </th>
+                            <th class="px-6 py-4 text-right text-sm font-medium text-green-600">
+                                Rp {{ number_format($summary['total_pendapatan_bersih'], 0, ',', '.') }}
                             </th>
                         </tr>
                     </tfoot>
@@ -128,8 +160,6 @@
             try {
                 event.preventDefault();
                 const date = document.getElementById('date').value;
-
-                // Ganti route sesuai kebutuhan
                 const url = `{{ route('reports.print.daily') }}?date=${date}`;
                 window.open(url, '_blank');
             } catch (error) {
@@ -137,5 +167,4 @@
             }
         }
     </script>
-
 </x-layouts.app>

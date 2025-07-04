@@ -13,7 +13,15 @@
             ['name' => 'Menu', 'icon' => 'utensils', 'route' => 'menu.index', 'show' => ['role_admin']],
             ['name' => 'Order', 'icon' => 'banknote-arrow-up', 'route' => 'order.index', 'show' => ['role_kasir', 'role_admin', 'role_dapur']],
             ['name' => 'Refund', 'icon' => 'banknote-arrow-up', 'route' => 'refunds.index', 'show' => ['role_kasir', 'role_admin']],
-            ['name' => 'Laporan', 'icon' => 'banknote-arrow-up', 'route' => 'reports.index', 'show' => ['role_admin']],
+            [
+                'name' => 'Laporan', 
+                'icon' => 'chart-bar', 
+                'show' => ['role_admin'],
+                'submenu' => [
+                    ['name' => 'Laporan Penjualan', 'route' => 'reports.index', 'icon' => 'banknote-arrow-up'],
+                    ['name' => 'Laporan Harian', 'route' => 'reports.index.daily', 'icon' => 'banknote-arrow-up']
+                ]
+            ],
         ];
 
         $userRole = auth()->user()->role;
@@ -34,15 +42,41 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid gap-2">
                     @foreach($sidebarMenu as $menuItem)
-                        <flux:navlist.item
-                            icon="{{ $menuItem['icon'] }}"
-                            :href="route($menuItem['route'])"
-                            :current="request()->routeIs($menuItem['route'])"
-                            wire:navigate
-                            class="mb-2"
-                        >
-                            {{ __($menuItem['name']) }}
-                        </flux:navlist.item>
+                        @if(isset($menuItem['submenu']))
+                            <!-- Menu with submenu -->
+                            <flux:dropdown position="right" align="start">
+                                <flux:navlist.item
+                                    icon="{{ $menuItem['icon'] }}"
+                                    class="mb-2 cursor-pointer"
+                                    icon-trailing="chevron-right"
+                                >
+                                    {{ __($menuItem['name']) }}
+                                </flux:navlist.item>
+                                
+                                <flux:menu class="w-[220px]">
+                                    @foreach($menuItem['submenu'] as $submenuItem)
+                                        <flux:menu.item
+                                            icon="{{ $submenuItem['icon'] }}"
+                                            :href="route($submenuItem['route'])"
+                                            wire:navigate
+                                        >
+                                            {{ __($submenuItem['name']) }}
+                                        </flux:menu.item>
+                                    @endforeach
+                                </flux:menu>
+                            </flux:dropdown>
+                        @else
+                            <!-- Regular menu item -->
+                            <flux:navlist.item
+                                icon="{{ $menuItem['icon'] }}"
+                                :href="route($menuItem['route'])"
+                                :current="request()->routeIs($menuItem['route'])"
+                                wire:navigate
+                                class="mb-2"
+                            >
+                                {{ __($menuItem['name']) }}
+                            </flux:navlist.item>
+                        @endif
                     @endforeach
                 </flux:navlist.group>
             </flux:navlist>

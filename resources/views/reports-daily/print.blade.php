@@ -1,6 +1,6 @@
 <x-layouts.app.clean :title="'Laporan Transaksi'">
     <div class="min-h-screen bg-gray-50 flex flex-col items-center p-4">
-        <div class="w-full max-w-4xl bg-white rounded-lg shadow-sm overflow-hidden print:max-w-full print:shadow-none">
+        <div class="w-full max-w-6xl bg-white rounded-lg shadow-sm overflow-hidden print:max-w-full print:shadow-none">
             <!-- Print controls (hide when printing) -->
             <div class="mb-6 text-center print:hidden">
                 <button onclick="window.print()"
@@ -24,8 +24,36 @@
                 <!-- Header -->
                 <div class="text-center mb-6">
                     <h1 class="text-2xl font-bold text-gray-800">LAPORAN HARIAN</h1>
-                    <p class="text-gray-600 mt-2">Periode: {{ $date }}</p>
+                    <p class="text-gray-600 mt-2">Tanggal: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
                     <p class="text-gray-500 text-sm">Dicetak pada: {{ $printDate }}</p>
+                </div>
+
+                <!-- Summary -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    <div class="border p-3 rounded">
+                        <h3 class="text-sm font-medium text-gray-500">Total Transaksi</h3>
+                        <p class="text-xl font-semibold">{{ $summary['total_penjualan'] }}</p>
+                    </div>
+                    <div class="border p-3 rounded">
+                        <h3 class="text-sm font-medium text-gray-500">Pendapatan Kotor</h3>
+                        <p class="text-xl font-semibold">Rp {{ number_format($summary['total_pendapatan_kotor'], 0, ',', '.') }}</p>
+                    </div>
+                    <div class="border p-3 rounded">
+                        <h3 class="text-sm font-medium text-gray-500">Pendapatan Bersih</h3>
+                        <p class="text-xl font-semibold">Rp {{ number_format($summary['total_pendapatan_bersih'], 0, ',', '.') }}</p>
+                    </div>
+                    <div class="border p-3 rounded">
+                        <h3 class="text-sm font-medium text-gray-500">Total Tunai</h3>
+                        <p class="text-xl font-semibold">Rp {{ number_format($summary['total_cash'], 0, ',', '.') }}</p>
+                    </div>
+                    <div class="border p-3 rounded">
+                        <h3 class="text-sm font-medium text-gray-500">Total Digital</h3>
+                        <p class="text-xl font-semibold">Rp {{ number_format($summary['total_digital'], 0, ',', '.') }}</p>
+                    </div>
+                    <div class="border p-3 rounded">
+                        <h3 class="text-sm font-medium text-gray-500">Total Refund</h3>
+                        <p class="text-xl font-semibold text-red-600">Rp {{ number_format($summary['total_refund'], 0, ',', '.') }}</p>
+                    </div>
                 </div>
 
                 <!-- Report Table -->
@@ -33,44 +61,39 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th scope="col"
-                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    No
-                                </th>
-                                <th scope="col"
-                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Kode
-                                </th>
-                                <th scope="col"
-                                    class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Jenis Bayar
-                                </th>
-                                <th scope="col"
-                                    class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total
-                                </th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode Order</th>
+                                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis Bayar</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Kotor</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Refund</th>
+                                <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Bersih</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            @forelse($reports as $index => $report)
+                            @forelse($reports as $report)
+                                @php
+                                    $grossTotal = $report->subtotal + $report->tax;
+                                    $netTotal = $grossTotal - ($report->total_refund ?? 0);
+                                @endphp
                                 <tr>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                                        {{ $loop->iteration }}
-                                    </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                                        {{ $report->transaction_code }}
-                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">{{ $loop->iteration }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $report->transaction_code }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
                                         {{ $paymentMethodLabels[$report->payment_method] }}
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
-                                        Rp {{ number_format(($report->subtotal + $report->tax), 0, ',', '.') }}
+                                        Rp {{ number_format($grossTotal, 0, ',', '.') }}
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-red-600 text-right">
+                                        Rp {{ number_format($report->total_refund ?? 0, 0, ',', '.') }}
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-green-600 text-right">
+                                        Rp {{ number_format($netTotal, 0, ',', '.') }}
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4"
-                                        class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                    <td colspan="6" class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                         Tidak ada data transaksi untuk periode yang dipilih
                                     </td>
                                 </tr>
@@ -78,11 +101,15 @@
                         </tbody>
                         <tfoot class="bg-gray-50">
                             <tr>
-                                <th colspan="3" class="px-4 py-3 text-left text-sm font-medium text-gray-900">
-                                    TOTAL
-                                </th>
+                                <th colspan="3" class="px-4 py-3 text-left text-sm font-medium text-gray-900">TOTAL</th>
                                 <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">
-                                    Rp {{ number_format($summary['total_pendapatan'], 0, ',', '.') }}
+                                    Rp {{ number_format($summary['total_pendapatan_kotor'], 0, ',', '.') }}
+                                </th>
+                                <th class="px-4 py-3 text-right text-sm font-medium text-red-600">
+                                    Rp {{ number_format($summary['total_refund'], 0, ',', '.') }}
+                                </th>
+                                <th class="px-4 py-3 text-right text-sm font-medium text-green-600">
+                                    Rp {{ number_format($summary['total_pendapatan_bersih'], 0, ',', '.') }}
                                 </th>
                             </tr>
                         </tfoot>
@@ -132,6 +159,7 @@
             body {
                 padding: 0;
                 background: white;
+                font-size: 12px;
             }
 
             .report-content {
@@ -143,11 +171,11 @@
             table {
                 width: 100%;
                 border-collapse: collapse;
+                font-size: 11px;
             }
 
-            th,
-            td {
-                padding: 8px 12px;
+            th, td {
+                padding: 6px 8px;
                 border: 1px solid #e2e8f0;
             }
 
@@ -158,6 +186,32 @@
             tfoot {
                 font-weight: bold;
                 background-color: #f1f5f9;
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+
+            .grid > div {
+                border: 1px solid #e2e8f0;
+                padding: 8px;
+                border-radius: 4px;
+            }
+
+            h1 {
+                font-size: 18px;
+                margin-bottom: 4px;
+            }
+
+            .text-sm {
+                font-size: 10px;
+            }
+
+            .text-xl {
+                font-size: 14px;
             }
         }
     </style>
