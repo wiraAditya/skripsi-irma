@@ -1,16 +1,36 @@
 <x-layouts.app :title="'Laporan Harian'">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Laporan Harian</h1>
+        <h1 class="text-2xl font-semibold text-gray-900">Laporan Transaksi</h1>
     </div>
 
     <!-- Filter Form -->
     <div class="bg-white shadow-sm rounded-lg p-6 mb-6">
-        <form method="GET" action="{{ route('reports.index.daily') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <label for="date" class="block text-sm font-medium text-gray-700">Tanggal</label>
-                <input type="date" name="date" id="date" value="{{ $date }}"
-                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        <form id="filter" method="GET" action="{{ route('reports.index.daily') }}" class="space-y-4">
+        <div>
+                <label for="report_type" class="block text-sm font-medium text-gray-700">Tipe Laporan</label>
+                <select id="report_type" name="report_type"
+                    class="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    onchange="toggleReportType()">
+                    <option value="recap" {{ $reportType == 'recap' ? 'selected' : '' }}>Rekap</option>
+                    <option value="transaction" {{ $reportType == 'transaction' ? 'selected' : '' }}>Transaksi</option>
+                </select>
             </div>
+
+            <!-- Date Range -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="start_date" class="block text-sm font-medium text-gray-700">Tanggal Mulai</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ $startDate }}"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="end_date" class="block text-sm font-medium text-gray-700">Tanggal Akhir</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ $endDate }}"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+            
+            <!-- Buttons -->
             <div class="flex items-end space-x-2">
                 <button type="submit"
                     class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
@@ -20,6 +40,10 @@
                     class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
                     Reset
                 </a>
+                <button type="button" onclick="setToday()"
+                    class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                    Hari Ini
+                </button>
                 <a href="#" target="_blank" id="print-daily-report"
                     onclick="handlePrintDailyReport(event)"
                     class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
@@ -30,11 +54,12 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-white shadow-sm rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900">Total Penjualan</h3>
             <p class="mt-2 text-3xl font-semibold text-blue-600">{{ $summary['total_penjualan'] }}</p>
-            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
+            <p class="mt-1 text-sm text-gray-500">Periode: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} -
+                {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
         </div>
         <div class="bg-white shadow-sm rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900">Pendapatan Kotor</h3>
@@ -156,6 +181,13 @@
     </div>
 
     <script>
+        function setToday() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('start_date').value = today;
+            document.getElementById('end_date').value = today;
+            // Submit the form
+            document.getElementById('filter').submit();
+        }
         function handlePrintDailyReport(event) {
             try {
                 event.preventDefault();

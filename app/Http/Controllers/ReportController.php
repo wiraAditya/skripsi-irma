@@ -12,6 +12,11 @@ class ReportController extends Controller
 {
     public function index(Request $request)
     {
+        $reportType = $request->input('report_type') ?? 'recap';
+        if($reportType === 'transaction') {
+            return redirect()->route('reports.index.daily');
+        }
+        $reportType = '';
         // Default date range: first day to last day of current month
         $startDate = $request->input('start_date', Carbon::now()->firstOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', Carbon::now()->lastOfMonth()->format('Y-m-d'));
@@ -63,7 +68,7 @@ class ReportController extends Controller
             'total_refund' => $reports->sum('total_refund'),
         ];
 
-        return view('reports.index', compact('reports', 'summary', 'startDate', 'endDate', 'today'));
+        return view('reports.index', compact('reports', 'summary', 'startDate', 'endDate', 'today', 'reportType'));
     }
 
 
@@ -119,17 +124,24 @@ class ReportController extends Controller
 
     public function index_daily(Request $request)
     {
-        $date = $request->input('date', Carbon::now()->format('Y-m-d'));
-
+        $reportType = $request->input('report_type') ?? 'transaction';
+        if($reportType === 'recap') {
+            return redirect()->route('reports.index');
+        }
+        $startDate = $request->input('start_date', Carbon::now()->firstOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::now()->lastOfMonth()->format('Y-m-d'));
+    
         // Validate dates
         $request->validate([
-            'date' => 'sometimes|date',
+            'startDate' => 'sometimes|date',
+            'endDate' => 'sometimes|date',
         ]);
 
         // First get the refund sums per order
         $refundSums = DB::table('refunds')
             ->select('order_id', DB::raw('SUM(refund_amount) as total_refund'))
-            ->whereDate('created_at', $date)
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
             ->groupBy('order_id');
 
         // Get orders with their refund totals
@@ -146,7 +158,8 @@ class ReportController extends Controller
                 Order::STATUS_PROCESS,
                 Order::STATUS_DONE
             ])
-            ->whereDate('tanggal', $date)
+            ->whereDate('tanggal', '>=', $startDate)
+            ->whereDate('tanggal', '<=', $endDate)
             ->get();
 
         $totalPendapatanKotor = 0;
@@ -185,22 +198,24 @@ class ReportController extends Controller
             Order::PAYMENT_DIGITAL => 'Digital'
         ];
         $orderModel = Order::class;
-        return view('reports-daily.index', compact('reports', 'summary', 'date', 'paymentMethodLabels', 'orderModel'));
+        return view('reports-daily.index', compact('reports', 'summary',  'paymentMethodLabels', 'orderModel', 'reportType', 'startDate', 'endDate'));
     }
 
     public function print_daily(Request $request)
     {
-        $date = $request->input('date', Carbon::now()->format('Y-m-d'));
-
+        $startDate = $request->input('start_date', Carbon::now()->firstOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::now()->lastOfMonth()->format('Y-m-d'));
         // Validate dates
         $request->validate([
-            'date' => 'sometimes|date',
+            'startDate' => 'sometimes|date',
+            'endDate' => 'sometimes|date',
         ]);
 
         // First get the refund sums per order
         $refundSums = DB::table('refunds')
             ->select('order_id', DB::raw('SUM(refund_amount) as total_refund'))
-            ->whereDate('created_at', $date)
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate)
             ->groupBy('order_id');
 
         // Get orders with their refund totals
@@ -217,7 +232,8 @@ class ReportController extends Controller
                 Order::STATUS_PROCESS,
                 Order::STATUS_DONE
             ])
-            ->whereDate('tanggal', $date)
+            ->whereDate('tanggal', '>=', $startDate)
+            ->whereDate('tanggal', '<=', $endDate)
             ->get();
 
         $totalPendapatanKotor = 0;
@@ -257,7 +273,8 @@ class ReportController extends Controller
         ];
 
         $printDate = now()->format('d/m/Y H:i');
+        $period = Carbon::parse($startDate)->format('d/m/Y') . ' - ' . Carbon::parse($endDate)->format('d/m/Y');
 
-        return view('reports-daily.print', compact('reports', 'summary', 'date', 'printDate', 'paymentMethodLabels'));
+        return view('reports-daily.print', compact('reports', 'summary', 'printDate', 'paymentMethodLabels', 'startDate', 'endDate', 'period'));
     }
 }

@@ -13,15 +13,8 @@
             ['name' => 'Menu', 'icon' => 'utensils', 'route' => 'menu.index', 'show' => ['role_admin']],
             ['name' => 'Order', 'icon' => 'banknote-arrow-up', 'route' => 'order.index', 'show' => ['role_kasir', 'role_admin', 'role_dapur']],
             ['name' => 'Refund', 'icon' => 'banknote-arrow-up', 'route' => 'refunds.index', 'show' => ['role_kasir', 'role_admin']],
-            [
-                'name' => 'Laporan', 
-                'icon' => 'chart-bar', 
-                'show' => ['role_admin'],
-                'submenu' => [
-                    ['name' => 'Laporan Penjualan', 'route' => 'reports.index', 'icon' => 'banknote-arrow-up'],
-                    ['name' => 'Laporan Harian', 'route' => 'reports.index.daily', 'icon' => 'banknote-arrow-up']
-                ]
-            ],
+            ['name' => 'Laporan', 'icon' => 'chart-bar', 'route' => 'reports.index', 'show' => ['role_admin']],
+            
         ];
 
         $userRole = auth()->user()->role;

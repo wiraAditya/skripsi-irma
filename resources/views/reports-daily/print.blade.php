@@ -23,8 +23,8 @@
             <div class="report-content print:w-full mx-auto p-6">
                 <!-- Header -->
                 <div class="text-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800">LAPORAN HARIAN</h1>
-                    <p class="text-gray-600 mt-2">Tanggal: {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</p>
+                    <h1 class="text-2xl font-bold text-gray-800">LAPORAN TRANSAKSI</h1>
+                    <p class="text-gray-600 mt-2">Periode: {{ $period }}</p>
                     <p class="text-gray-500 text-sm">Dicetak pada: {{ $printDate }}</p>
                 </div>
 

@@ -1,25 +1,45 @@
 <x-layouts.app :title="'Laporan Transaksi'">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Laporan Penjualan</h1>
+        <h1 class="text-2xl font-semibold text-gray-900">Laporan Rekap</h1>
     </div>
+
 
     <!-- Filter Form -->
     <div class="bg-white shadow-sm rounded-lg p-6 mb-6">
-        <form method="GET" action="{{ route('reports.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <form id="filter" method="GET" action="{{ route('reports.index') }}" class="space-y-4">
+            <!-- Report Type -->
             <div>
-                <label for="start_date" class="block text-sm font-medium text-gray-700">Tanggal Mulai</label>
-                <input type="date" name="start_date" id="start_date" value="{{ $startDate }}"
-                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <label for="report_type" class="block text-sm font-medium text-gray-700">Tipe Laporan</label>
+                <select id="report_type" name="report_type"
+                    class="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="recap" {{ $reportType == 'recap' ? 'selected' : '' }}>Rekap</option>
+                    <option value="transaction" {{ $reportType == 'transaction' ? 'selected' : '' }}>Transaksi</option>
+                </select>
             </div>
-            <div>
-                <label for="end_date" class="block text-sm font-medium text-gray-700">Tanggal Akhir</label>
-                <input type="date" name="end_date" id="end_date" value="{{ $endDate }}"
-                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+
+            <!-- Date Range -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="start_date" class="block text-sm font-medium text-gray-700">Tanggal Mulai</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ $startDate }}"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="end_date" class="block text-sm font-medium text-gray-700">Tanggal Akhir</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ $endDate }}"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
             </div>
-            <div class="flex items-end space-x-2">
+            
+            <!-- Buttons -->
+            <div class="flex flex-wrap items-center gap-2">
                 <button type="submit"
                     class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     Filter
+                </button>
+                <button type="button" onclick="setToday()"
+                    class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                    Hari Ini
                 </button>
                 <a href="{{ route('reports.index') }}"
                     class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
@@ -161,5 +181,27 @@
             console.error('Error:', error);
         }
     }
+    function setToday() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('start_date').value = today;
+        document.getElementById('end_date').value = today;
+        // Submit the form
+        document.getElementById('filter').submit();
+    }
+
+    function handlePrintReport(event) {
+        try {
+            event.preventDefault();
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            const reportType = document.getElementById('report_type').value;
+
+            const url = `{{ route('reports.print') }}?start_date=${startDate}&end_date=${endDate}&report_type=${reportType}`;
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
     </script>
+    
 </x-layouts.app>
