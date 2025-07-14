@@ -7,6 +7,7 @@ use App\Models\Refund;
 use App\Models\OrderDetails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class RefundController extends Controller
 {
@@ -30,7 +31,6 @@ class RefundController extends Controller
             
             $searchTerm = $request->order_id;
             
-            // Search by ID or transaction code
             $order = Order::with(['orderDetails.menu', 'orderDetails.refundItems'])
                 ->where('id', $searchTerm)
                 ->orWhere('transaction_code', $searchTerm)
@@ -54,52 +54,55 @@ class RefundController extends Controller
             'order_id' => 'required|exists:orders,id',
             'items' => 'required|array',
             'method' => 'required|in:cash,transfer',
+            'proof_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ], [
-            'items.required' => 'Please select at least one item to refund.',
-            'method.required' => 'Please select a refund method.',
-            'method.in' => 'Please select a valid refund method.',
+            'proof_file.file' => 'The proof file must be a valid file.',
+            'proof_file.mimes' => 'File must be JPG, PNG, or PDF.',
+            'proof_file.max' => 'File size must be less than 2MB.',
         ]);
+
+        if ($request->method === 'transfer') {
+            $request->validate([
+                'proof_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            ], [
+                'proof_file.required' => 'Proof file is required for transfer method.',
+            ]);
+        }
 
         $order = Order::with('orderDetails.refundItems')->findOrFail($request->order_id);
         $validationErrors = [];
         $validItems = [];
-        
-        // Filter items that have 'id' (checked items)
+
         foreach ($request->items as $itemIndex => $item) {
             if (isset($item['id'])) {
                 $validItems[] = $item;
-                
-                // Validate quantity for checked items
+
                 if (!isset($item['qty']) || !is_numeric($item['qty']) || $item['qty'] < 1) {
                     $validationErrors["items.{$itemIndex}.qty"] = "Quantity must be at least 1.";
                 }
-                
-                // Validate reason for checked items
+
                 if (!isset($item['reason']) || empty(trim($item['reason']))) {
                     $validationErrors["items.{$itemIndex}.reason"] = "Please provide a reason for refunding this item.";
                 } elseif (strlen($item['reason']) > 500) {
                     $validationErrors["items.{$itemIndex}.reason"] = "Reason cannot exceed 500 characters.";
                 }
-                
-                // Validate stock availability using new method
+
                 if (isset($item['qty']) && is_numeric($item['qty'])) {
                     $orderDetail = OrderDetails::find($item['id']);
                     if ($orderDetail) {
-                        // Check against net quantity (original - already refunded)
                         $availableQty = $orderDetail->getAvailableRefundQuantity();
                         if ($item['qty'] > $availableQty) {
-                            $validationErrors["items.{$itemIndex}.qty"] = "Cannot refund more than {$availableQty} items. (Original: {$orderDetail->qty}, Already refunded: {$orderDetail->getTotalRefundedQuantity()})";
+                            $validationErrors["items.{$itemIndex}.qty"] = "Cannot refund more than {$availableQty} items.";
                         }
                     }
                 }
             }
         }
-        
-        // Check if at least one item is selected
+
         if (empty($validItems)) {
             $validationErrors['items'] = 'Please select at least one item to refund.';
         }
-        
+
         if (!empty($validationErrors)) {
             return back()->withErrors($validationErrors)->withInput();
         }
@@ -113,23 +116,24 @@ class RefundController extends Controller
                 $orderDetail = OrderDetails::findOrFail($item['id']);
                 $qty = $item['qty'];
                 $amount = $qty * $orderDetail->harga;
-                
-                // Double-check availability within transaction
+
                 if (!$orderDetail->canBeRefunded($qty)) {
-                    throw new \Exception("Insufficient quantity available for refund on item {$orderDetail->id}");
+                    throw new \Exception("Insufficient quantity for item {$orderDetail->id}");
                 }
-                
+
                 $totalRefund += $amount;
-                
+
                 $refundItems[] = [
                     'order_detail_id' => $orderDetail->id,
                     'quantity' => $qty,
                     'refund_amount' => $amount,
                     'reason' => $item['reason'],
                 ];
+            }
 
-                // DO NOT modify the original order detail quantity
-                // The original data stays intact for reporting purposes
+            $proofFilePath = null;
+            if ($request->hasFile('proof_file')) {
+                $proofFilePath = $request->file('proof_file')->store('refund_proofs', 'public');
             }
 
             $refund = Refund::create([
@@ -139,6 +143,7 @@ class RefundController extends Controller
                 'reason' => 'Multiple items refunded',
                 'status' => Refund::STATUS_APPROVED,
                 'refund_method' => $request->method,
+                'proof_file' => $proofFilePath,
             ]);
 
             foreach ($refundItems as $item) {
@@ -148,7 +153,7 @@ class RefundController extends Controller
             DB::commit();
 
             return redirect()->route('refunds.index')
-                ->with('success', "Refund processed successfully. Total refund amount: " . number_format($totalRefund));
+                ->with('success', "Refund processed successfully. Total refund: Rp " . number_format($totalRefund));
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -162,7 +167,6 @@ class RefundController extends Controller
         return view('refunds.show', compact('refund'));
     }
 
-    // New method to get order summary with refund information
     public function getOrderSummary($orderId)
     {
         $order = Order::with(['orderDetails.menu', 'orderDetails.refundItems.refund'])

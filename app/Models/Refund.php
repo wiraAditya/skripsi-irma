@@ -24,7 +24,9 @@ class Refund extends Model
         'reason',
         'status',
         'refund_method',
+        'proof_file', 
     ];
+    
 
     protected $attributes = [
         'status' => self::STATUS_PENDING,

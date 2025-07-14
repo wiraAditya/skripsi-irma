@@ -8,6 +8,7 @@
             @if($step === 1)
                 <!-- Langkah 1: Pilih Pesanan -->
                 <form action="{{ route('refunds.create') }}" method="GET">
+                    @csrf
                     <div class="mb-4">
                         <flux:input
                             name="order_id"
@@ -24,7 +25,7 @@
                     </div>
                     
                     <!-- Tampilkan error umum jika ada -->
-                    @if ($errors->any() && !$errors->has('order_id'))
+                    @if ($errors->any())
                         <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
                             <div class="flex">
                                 <div class="ml-3">
@@ -54,7 +55,7 @@
                 </form>
             @elseif($step === 2)
                 <!-- Langkah 2: Pilih Item -->
-                <form action="{{ route('refunds.store') }}" method="POST">
+                <form action="{{ route('refunds.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="order_id" value="{{ $order->id }}">
 
@@ -99,13 +100,13 @@
                                         <label for="item-{{ $item->id }}" class="block text-sm text-gray-700">
                                             <span class="font-medium">{{ $item->menu->name ?? 'Menu Item' }}</span>
                                             <span class="block text-xs text-gray-500">
-                                                Rp {{ number_format($item->harga, 0, ',', '.') }} × {{ $item->qty }} (Tersedia: {{ $item->qty }})
+                                                Rp {{ number_format($item->harga, 0, ',', '.') }} × {{ $item->qty }} (Tersedia: {{ $item->getAvailableRefundQuantity() }})
                                             </span>
                                         </label>
                                         <div class="mt-1 flex items-center">
                                             <label for="qty-{{ $item->id }}" class="mr-2 text-sm text-gray-600">Jumlah:</label>
                                             <input type="number" id="qty-{{ $item->id }}" name="items[{{ $index }}][qty]" 
-                                                min="1" max="{{ $item->qty }}" 
+                                                min="1" max="{{ $item->getAvailableRefundQuantity() }}" 
                                                 value="{{ old('items.'.$index.'.qty', 1) }}"
                                                 class="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm {{ $errors->has('items.'.$index.'.qty') ? 'border-red-300' : '' }}">
                                             
@@ -165,32 +166,24 @@
                         </div>
                     </div>
 
-                    <script>
-                        function toggleItemDetails(index) {
-                            const checkbox = document.getElementById('item-' + document.querySelector(`input[name="items[${index}][id]"]`).value);
-                            const detailsDiv = document.getElementById('item-details-' + index);
-                            const reasonTextarea = document.querySelector(`textarea[name="items[${index}][reason]"]`);
-                            
-                            if (checkbox.checked) {
-                                detailsDiv.style.display = 'block';
-                                reasonTextarea.required = true;
-                            } else {
-                                detailsDiv.style.display = 'none';
-                                reasonTextarea.required = false;
-                                reasonTextarea.value = '';
-                            }
-                        }
-                        
-                        // Inisialisasi saat halaman dimuat
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const checkboxes = document.querySelectorAll('input[type="checkbox"][name*="[id]"]');
-                            checkboxes.forEach((checkbox, index) => {
-                                if (checkbox.checked) {
-                                    toggleItemDetails(index);
-                                }
-                            });
-                        });
-                    </script>
+                    <div id="proof_file_container" class="mb-4" style="display: {{ old('method') === 'transfer' ? 'block' : 'none' }};">
+                        <label for="proof_file" class="block text-sm font-medium text-gray-700">Bukti Transfer (PDF/JPG/PNG)</label>
+                        <div class="mt-1 flex items-center">
+                            <input type="file" name="proof_file" id="proof_file"
+                                accept=".jpg,.jpeg,.png,.pdf"
+                                class="block w-full text-sm text-gray-500
+                                       file:mr-4 file:py-2 file:px-4
+                                       file:rounded-md file:border-0
+                                       file:text-sm file:font-semibold
+                                       file:bg-blue-50 file:text-blue-700
+                                       hover:file:bg-blue-100
+                                       {{ $errors->has('proof_file') ? 'border-red-300' : '' }}">
+                        </div>
+                        <p class="mt-1 text-sm text-gray-500">Format: JPG, PNG, atau PDF (Maksimal 2MB)</p>
+                        @error('proof_file')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
 
                     <div class="flex justify-end gap-1">
                         <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
@@ -201,6 +194,62 @@
                         </a>
                     </div>
                 </form>
+
+                <script>
+                    function toggleItemDetails(index) {
+                        const checkbox = document.querySelector(`input[name="items[${index}][id]"]`);
+                        const detailsDiv = document.getElementById(`item-details-${index}`);
+                        const reasonTextarea = document.querySelector(`textarea[name="items[${index}][reason]"]`);
+                        
+                        if (checkbox.checked) {
+                            detailsDiv.style.display = 'block';
+                            if (reasonTextarea) {
+                                reasonTextarea.required = true;
+                            }
+                        } else {
+                            detailsDiv.style.display = 'none';
+                            if (reasonTextarea) {
+                                reasonTextarea.required = false;
+                                reasonTextarea.value = '';
+                            }
+                        }
+                    }
+                    
+                    // Initialize on page load
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Initialize item details toggles
+                        document.querySelectorAll('input[type="checkbox"][name*="[id]"]').forEach((checkbox, index) => {
+                            if (checkbox.checked) {
+                                toggleItemDetails(index);
+                            }
+                            
+                            // Add event listener for future changes
+                            checkbox.addEventListener('change', function() {
+                                toggleItemDetails(index);
+                            });
+                        });
+
+                        // Handle payment method toggle
+                        const proofContainer = document.getElementById('proof_file_container');
+                        document.querySelectorAll('input[name="method"]').forEach(radio => {
+                            radio.addEventListener('change', function() {
+                                proofContainer.style.display = this.value === 'transfer' ? 'block' : 'none';
+                                if (this.value !== 'transfer') {
+                                    document.getElementById('proof_file').value = '';
+                                }
+                            });
+                        });
+
+                        // Initialize file input preview if needed
+                        const fileInput = document.getElementById('proof_file');
+                        if (fileInput) {
+                            fileInput.addEventListener('change', function() {
+                                const fileName = this.files[0]?.name || 'No file chosen';
+                                // You can add file preview logic here if needed
+                            });
+                        }
+                    });
+                </script>
             @endif
         </div>
     </div>
